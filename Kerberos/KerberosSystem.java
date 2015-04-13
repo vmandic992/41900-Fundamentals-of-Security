@@ -1,37 +1,37 @@
 
 public class KerberosSystem 
 {
-	private AuthenticationServer AS;
-	private TicketGrantingServer TGS;
+	private AuthenticationServer as;
+	private TicketGrantingServer tgs;
 	private Server server;
 	private Client client;
 	
 	public KerberosSystem() 
 	{
-		ShowWelcomeText();
-		CreateAS();
-		CreateTGS();
-		CreateServer();
+		showWelcomeText();
+		createAS();
+		createTGS();
+		createServer();
 	}
 	
-	private void ShowWelcomeText()
+	private void showWelcomeText()
 	{
 		String s = "Welcome to this simulation of a basic Kerberos system!";
 		System.out.println(s);
 	}
 	
-	private void CreateAS()
+	private void createAS()
 	{
 		System.out.println("\n>>> STEP 1: CREATE AUTHENTICATION SERVER (AS) AND ADD CLIENTS TO DATABASE <<<");
-		AS = new AuthenticationServer();
+		as = new AuthenticationServer();
 	}
 	
-	private void CreateTGS()
+	private void createTGS()
 	{
-		TGS = new TicketGrantingServer();
+		tgs = new TicketGrantingServer();
 	}
 	
-	private void CreateServer()
+	private void createServer()
 	{
 		server = new Server();
 	}

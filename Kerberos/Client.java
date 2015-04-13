@@ -8,22 +8,22 @@ public class Client
 	
 	public Client() 
 	{
-		username = SetLogin("Username");
-		password = SetLogin("Password");
+		username = setLogin("Username");
+		password = setLogin("Password");
 	}
 	
-	private String SetLogin(String attribute)
+	private String setLogin(String attribute)
 	{
-		String input = GetStringInput("\n > " + attribute + ": ");
+		String input = getStringInput("\n > " + attribute + ": ");
 		while (input.equals(""))
 		{
 			System.out.print(" Error: You entered an empty " + attribute + "\n");
-			input = GetStringInput("\n > " + attribute + ": ");
+			input = getStringInput("\n > " + attribute + ": ");
 		}
 		return input;
 	}
 	
-	private String GetStringInput(String prompt)
+	private String getStringInput(String prompt)
 	{
 		System.out.print(prompt);
 		return scanner.nextLine();

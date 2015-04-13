@@ -7,36 +7,36 @@ public class AuthenticationServer
 	
 	public AuthenticationServer()
 	{
-		CreateClients();
-		DisplayAddedClients();
+		createClients();
+		displayAddedClients();
 	}
 	
-	private void CreateClients()
+	private void createClients()
 	{
-		CreateMandatoryClient();
+		createMandatoryClient();
 		
 		String prompt = "\nAdd a client? [Hit (Enter) for 'Yes', type 'No' to stop]: ";
-		String input = GetStringInput(prompt);
+		String input = getStringInput(prompt);
 		while (!input.equalsIgnoreCase("No"))
 		{
 			clients.add(new Client());
-			input = GetStringInput(prompt);
+			input = getStringInput(prompt);
 		}
 	}
 	
-	private void CreateMandatoryClient()
+	private void createMandatoryClient()
 	{
 		System.out.println("\nCreate first client");
 		clients.add(new Client());
 	}
 	
-	private String GetStringInput(String prompt)
+	private String getStringInput(String prompt)
 	{
 		System.out.print(prompt);
 		return scanner.nextLine();
 	}
 	
-	private void DisplayAddedClients()
+	private void displayAddedClients()
 	{
 		System.out.println("\n\n Clients added to AS database: \n");
 		for (Client client: clients)
