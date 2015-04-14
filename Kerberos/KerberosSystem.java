@@ -16,8 +16,7 @@ public class KerberosSystem
 	
 	private void showWelcomeText()
 	{
-		String s = "Welcome to this simulation of a basic Kerberos system!";
-		System.out.println(s);
+		System.out.println("Welcome to this simulation of a basic Kerberos system!");
 	}
 	
 	private void createAS()
