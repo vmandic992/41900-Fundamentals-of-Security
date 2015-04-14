@@ -12,6 +12,7 @@ public class KerberosSystem
 		createAS();
 		createTGS();
 		createServer();
+		executeKerberos();
 	}
 	
 	private void showWelcomeText()
@@ -33,5 +34,10 @@ public class KerberosSystem
 	private void createServer()
 	{
 		server = new Server();
+	}
+	
+	private void executeKerberos()
+	{
+		
 	}
 }
