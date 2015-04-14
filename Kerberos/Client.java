@@ -4,10 +4,12 @@ public class Client
 {
 	private String username;
 	private String password;
+	private int id;
 	private Scanner scanner = new Scanner(System.in);
 	
-	public Client() 
+	public Client(int id) 
 	{
+		this.id = id;
 		username = setLogin("Username");
 		password = setLogin("Password");
 	}
@@ -31,8 +33,8 @@ public class Client
 	
 	public String toString()
 	{
-		String s = " - Username: " + username + "\n";
-		s += " - Password: " + password + "\n";
+		String s = id + ": - Username: " + username + "\n";
+		s += "   - Password: " + password + "\n";
 		return s;
 	}
 }

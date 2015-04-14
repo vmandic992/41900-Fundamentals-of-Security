@@ -13,21 +13,22 @@ public class AuthenticationServer
 	
 	private void createClients()
 	{
-		createMandatoryClient();
+		int clientID = 1;
+		createMandatoryClient(clientID);
 		
 		String prompt = "\nAdd a client? [Hit (Enter) for 'Yes', type 'No' to stop]: ";
 		String input = getStringInput(prompt);
 		while (!input.equalsIgnoreCase("No"))
 		{
-			clients.add(new Client());
+			clients.add(new Client(++clientID));
 			input = getStringInput(prompt);
 		}
 	}
 	
-	private void createMandatoryClient()
+	private void createMandatoryClient(int clientID)
 	{
 		System.out.println("\nCreate first client");
-		clients.add(new Client());
+		clients.add(new Client(clientID));
 	}
 	
 	private String getStringInput(String prompt)
