@@ -14,7 +14,7 @@ public class KerberosSystem
 		createAS();
 		createTGS();
 		createServer();
-		executeKerberos();
+		startKerberos();
 	}
 	
 	private void showWelcomeText()
@@ -38,20 +38,20 @@ public class KerberosSystem
 		server = new Server();
 	}
 	
-	private void executeKerberos()
+	private void startKerberos()
 	{
-		client = AS.lookUpClient(getClientName());
-		while (client == null)
+		//client = AS.lookUpClient(getClientName());
+		/*while (client == null)
 		{
 			System.out.println("Error: Client does not exist \n");
 			client = AS.lookUpClient(getClientName());
 		}
-		AS.generateTicket();
+		AS.generateTicket();*/
 	}
-	
+	/*
 	private String getClientName()
 	{
 		System.out.print("Enter client username: ");
 		return scanner.nextLine();
-	}
+	}*/
 }

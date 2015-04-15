@@ -4,16 +4,19 @@ public class Client
 {
 	private String username;
 	private String password;
-	private int id;
+	//private int id;
 	private Scanner scanner = new Scanner(System.in);
 	
-	public Client(int id) 
+	public Client(String username, String password) 
 	{
+		this.username = username;
+		this.password = password;
+		/*
 		this.id = id;
 		username = setLogin("Username");
-		password = setLogin("Password");
+		password = setLogin("Password");*/
 	}
-	
+	/*
 	private String setLogin(String attribute)
 	{
 		String input = getStringInput("\n > " + attribute + ": ");
@@ -29,17 +32,17 @@ public class Client
 	{
 		System.out.print(prompt);
 		return scanner.nextLine();
-	}
+	}*/
 	
 	public String toString()
 	{
-		String s = id + ": - Username: " + username + "\n";
-		s += "   - Password: " + password + "\n";
+		String s = "- Username: " + username + "\n";
+		s += "- Password: " + password + "\n";
 		return s;
 	}
-	
+	/*
 	public boolean matches(String username)
 	{
 		return (this.username.equalsIgnoreCase(username));
-	}
+	}*/
 }

@@ -10,10 +10,12 @@ public class AuthenticationServer
 	
 	public AuthenticationServer()
 	{
-		createClients();
-		displayAddedClients();
+		clients.add(new Client("Joe Client", "joePass"));
+		displayClient();
+		//createClients();
+		//displayAddedClients();
 	}
-	
+	/*
 	private void createClients()
 	{
 		int clientID = 1;
@@ -38,9 +40,9 @@ public class AuthenticationServer
 	{
 		System.out.print(prompt);
 		return scanner.nextLine();
-	}
+	}*/
 	
-	private void displayAddedClients()
+	private void displayClient()
 	{
 		System.out.println("\n\n Clients added to AS database: \n");
 		for (Client client: clients)
@@ -48,7 +50,7 @@ public class AuthenticationServer
 			System.out.print(client.toString() + "\n");
 		}
 	}
-	
+	/*
 	public Client lookUpClient(String username)
 	{
 		for(Client client: clients)
@@ -59,7 +61,7 @@ public class AuthenticationServer
 			}
 		return null;
 	}
-	
+	*/
 	public void generateTicket()
 	{
 		//Ticket ticket = new Ticket();
