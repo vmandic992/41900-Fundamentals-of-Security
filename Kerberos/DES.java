@@ -54,17 +54,17 @@ public class DES
 		System.out.println(s);
 	}
 	
-	private String convertToBinary(String key)
+	private String convertStringToBinary(String s)
 	{
-		String binaryKey = "";
-		byte[] keyBytes = key.getBytes();
-		for (byte b : keyBytes)
-			binaryKey += Integer.toBinaryString(b);
-		return binaryKey.substring(0, 56);
+		String binaryString = "";
+		byte[] bytes = s.getBytes();
+		for (byte b: bytes)
+			binaryString += Integer.toBinaryString(b);
+		return binaryString;
 	}
 	
-	private LinkedList<String> generateSubKeys(String key)
-	{
+	private LinkedList<String> generateSubKeys()						//Simple for now, but later might code it to be more complex
+	{	
 		LinkedList<String> generatedKeys = new LinkedList<String>();
 		String shiftedKey = key;
 		for (int i = 0; i < numberOfRounds; i++)
@@ -103,8 +103,12 @@ public class DES
 	public String processData(String data, String key, processingType mode)
 	{
 		//Data needs to be converted into binary, segmented and padded before the following
-		this.key = convertToBinary(key);
-		subKeys = generateSubKeys(this.key);
+		LinkedList<Integer> decimalData = convertToDecimal(data);
+		LinkedList<String> binaryData = convertToBinary(decimalData);
+		LinkedList<String> blocks = segment(binaryData);
+		
+		this.key = convertStringToBinary(key).substring(0, 56);
+		subKeys = generateSubKeys();
 		switch (mode)
 		{
 			case ENCRYPT: 
@@ -115,6 +119,47 @@ public class DES
 		return null;
 	}
 	
+	private LinkedList<Integer> convertToDecimal(String data)
+	{
+		LinkedList<Integer> decimals = new LinkedList<Integer>();
+		for (int i = 0; i < data.length(); i++)
+		{
+			char c = data.charAt(i);
+			int decimal = (int)c;
+			decimals.add(decimal);
+		}
+		return decimals;
+	}
+	
+	private LinkedList<String> convertToBinary(LinkedList<Integer> decimalData)	//returns list of each character in binary
+	{
+		LinkedList<String> binaryData = new LinkedList<String>();
+		for (int i = 0; i < decimalData.size(); i++)
+		{
+			int decimal = decimalData.get(i);
+			String binary = Integer.toBinaryString(decimal);
+			//while (binary.length() < 8)
+				//binary = "0" + binary;
+			binary = pad(binary, 8);
+			binaryData.add(binary);
+		}
+		return binaryData;
+	}
+	
+	private LinkedList<String> segment(LinkedList<String> binaryData)
+	{
+		LinkedList<String> blocks = new LinkedList<String>();
+		
+		return blocks;
+	}
+	
+	private String pad(String data, int totalBinaryDigits)
+	{
+		String paddedData = data;
+		while (paddedData.length() < totalBinaryDigits)
+			paddedData = "0" + paddedData;
+		return paddedData;
+	}
 	
 	private LinkedList<String> reverseOrderSubKeys()
 	{
@@ -126,7 +171,6 @@ public class DES
 	
 	private String executeFeistel(String data, LinkedList<String> subKeys)
 	{
-		//Before anything, first the code must segment data into blocks
 		//Then, encrypt or decrypt each block by doing the below
 		//Execute 16 rounds of encryption (decryption uses the same process but reverse key order)
 		/*Each round:
@@ -157,9 +201,9 @@ public class DES
 		for (int i = 0; i < 16; i++)
 		{
 			String inputValue = "" + Integer.toBinaryString(i);
-			while (inputValue.length() < 4)
-				inputValue = "0" + inputValue;		
-			sBox[0][i] = inputValue;
+			//while (inputValue.length() < 4)
+				//inputValue = "0" + inputValue;		
+			sBox[0][i] = pad(inputValue, 4);
 		}
 	}
 	
@@ -174,5 +218,31 @@ public class DES
 			temp.remove(randomIndex);
 			sBox[1][i] = outputValue;
 		}
+	}
+	
+	private String performXOR(String data1, String data2)
+	{
+		String result = "";
+		for (int i = 0; i < data1.length(); i++)
+		{
+			if (data1.charAt(i) == data2.charAt(i))
+					result += "0";
+			else
+				result += "1";
+		}
+		return result;
+	}
+	
+	private String performBitInversion(String data)
+	{
+		String result = "";
+		for (int i = 0; i < data.length(); i++)
+		{
+			if (data.charAt(i) == '0')
+				result += "1";
+			else
+				result += "0";
+		}
+		return result;
 	}
 }

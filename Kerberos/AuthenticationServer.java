@@ -5,6 +5,9 @@ public class AuthenticationServer
 	private LinkedList<Client> clients = new LinkedList<Client>();
 	private Scanner scanner = new Scanner(System.in);
 	
+	private Client currentClient;	//represents the new logged-in client who wants to access the Server
+	private String symmetricKeyTGS;
+	
 	public AuthenticationServer()
 	{
 		createClients();
@@ -44,5 +47,21 @@ public class AuthenticationServer
 		{
 			System.out.print(client.toString() + "\n");
 		}
+	}
+	
+	public Client lookUpClient(String username)
+	{
+		for(Client client: clients)
+			if (client.matches(username))
+			{
+				currentClient = client;
+				return client;
+			}
+		return null;
+	}
+	
+	public void generateTicket()
+	{
+		//Ticket ticket = new Ticket();
 	}
 }

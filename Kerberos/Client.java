@@ -37,4 +37,9 @@ public class Client
 		s += "   - Password: " + password + "\n";
 		return s;
 	}
+	
+	public boolean matches(String username)
+	{
+		return (this.username.equalsIgnoreCase(username));
+	}
 }
