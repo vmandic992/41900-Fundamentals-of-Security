@@ -188,12 +188,13 @@ public class DES
 	private void constructSBox()
 	{
 		setInputSBoxValues();
-		
+		setOutputSBoxValues();
+		/*
 		LinkedList<String> temp = new LinkedList<String>();
 		for (int i = 0; i < 16; i++)
-			temp.add(sBox[0][i]);
+			temp.add(sBox[0][i]);*/
 		
-		setOutputSBoxValues(temp);
+		//setOutputSBoxValues(temp);
 	}
 	
 	private void setInputSBoxValues()
@@ -207,6 +208,19 @@ public class DES
 		}
 	}
 	
+	private void setOutputSBoxValues()
+	{
+		sBox[1][0] =  "1111"; sBox[1][1] =  "1010";
+		sBox[1][2] =  "1110"; sBox[1][3] =  "0001";
+		sBox[1][4] =  "0111"; sBox[1][5] =  "1001";
+		sBox[1][6] =  "0000"; sBox[1][7] =  "1101";
+		sBox[1][8] =  "0010"; sBox[1][9] =  "0011";
+		sBox[1][10] = "0100"; sBox[1][11] = "1000";
+		sBox[1][12] = "0101"; sBox[1][13] = "0110";
+		sBox[1][14] = "1100"; sBox[1][15] = "1011";
+	}
+	
+	/*
 	private void setOutputSBoxValues(LinkedList<String> temp)
 	{
 		Random rnd = new Random();
@@ -218,7 +232,7 @@ public class DES
 			temp.remove(randomIndex);
 			sBox[1][i] = outputValue;
 		}
-	}
+	}*/
 	
 	private String performXOR(String data1, String data2)
 	{
