@@ -3,11 +3,3 @@
 /DES$processingType.class
 /DES$shiftDirection.class
 /Ticket.class
-/AuthenticationServer.class
-/Client.class
-/KerberosSystem.class
-/Main.class
-/Server.class
-/TicketGrantingServer.class
-/TripleDES.class
-/RSA.class
