@@ -1,5 +1,4 @@
 import java.util.LinkedList;
-import java.util.Random;
 
 public class DES 
 {
@@ -8,41 +7,67 @@ public class DES
 	private String key;
 	private LinkedList<String> subKeys;
 	
-	public enum processingType
+	public static enum processingMode
 	{
 		ENCRYPT, DECRYPT
 	}
 	
-	public enum shiftDirection
+	public static enum shiftDirection
 	{
 		LEFT, RIGHT
 	}
 	
-	public DES()
+	//Constructor should receive key
+	public DES(String key)
 	{
-		//constructor will receive the key
 		constructSBox();
+		//printSBox();
+		this.key = convertStringToBinary(key).substring(0, 16);				//Convert input key to binary, we only want the first 16 bits
+		this.subKeys = generateSubKeys();									//Generate 16 x 16-bit sub-keys
+		//printKeys();
 	}
 	
-	private void printKeys()
+	private void constructSBox()
 	{
-		String s = "Primary Key: " + key + "\n" + "\n";
-		s += "Subkeys:" + "\n";
-		int i = 1;
-		for (String subKey: subKeys)
+		setInputSBoxValues();
+		setOutputSBoxValues();
+	}
+	
+	private void setInputSBoxValues()
+	{
+		for (int i = 0; i < 16; i++)
 		{
-			s += "Subkey " + formatSpaces(i) + ": " + subKey + "\n";
-			i++;
+			String inputValue = "" + Integer.toBinaryString(i);	
+			sBox[0][i] = pad(inputValue, 4);
 		}
-		System.out.println(s);
 	}
 	
-	private String formatSpaces(int i)
+	private String pad(String data, int totalBinaryDigits)
 	{
-		if (i < 10)
-			return "" + i + "  ";
-		else
-			return "" + i + " ";
+		String paddedData = data;
+		while (paddedData.length() < totalBinaryDigits)
+			paddedData = "0" + paddedData;
+		return paddedData;
+	}
+	
+	private void setOutputSBoxValues()										//Output values (inputs are sBox[0][i])
+	{
+        sBox[1][0] =  "1111"; 
+        sBox[1][1] =  "1010";
+        sBox[1][2] =  "1110"; 
+        sBox[1][3] =  "0001";
+        sBox[1][4] =  "0111"; 
+        sBox[1][5] =  "1001";
+        sBox[1][6] =  "0000"; 
+        sBox[1][7] =  "1101";
+        sBox[1][8] =  "0010"; 
+        sBox[1][9] =  "0011";
+        sBox[1][10] = "0100"; 
+        sBox[1][11] = "1000";
+        sBox[1][12] = "0101"; 
+        sBox[1][13] = "0110";
+        sBox[1][14] = "1100"; 
+        sBox[1][15] = "1011";
 	}
 	
 	private void printSBox()
@@ -63,19 +88,19 @@ public class DES
 		return binaryString;
 	}
 	
-	private LinkedList<String> generateSubKeys()						//Simple for now, but later might code it to be more complex
+	private LinkedList<String> generateSubKeys()							//Simple for now, but later might code it to be more complex
 	{	
 		LinkedList<String> generatedKeys = new LinkedList<String>();
 		String shiftedKey = key;
 		for (int i = 0; i < numberOfRounds; i++)
 		{
-			shiftedKey = shift(shiftedKey, 1, shiftDirection.LEFT);
+			shiftedKey = performShift(shiftedKey, 1, shiftDirection.LEFT);
 			generatedKeys.add(shiftedKey);
 		}
 		return generatedKeys;
 	}
 	
-	private String shift(String data, int shift, shiftDirection direction)
+	private String performShift(String data, int shift, shiftDirection direction)
 	{
 		String bitsToMove = "";
 		String shiftedString = "";
@@ -100,23 +125,49 @@ public class DES
 		return null;
 	}
 	
-	public String processData(String data, String key, processingType mode)
+	private void printKeys()
 	{
-		//Data needs to be converted into binary, segmented and padded before the following
-		LinkedList<Integer> decimalData = convertToDecimal(data);
-		LinkedList<String> binaryData = convertToBinary(decimalData);
-		LinkedList<String> blocks = segment(binaryData);
+		String s = "Primary Key: " + key + "\n" + "\n";
+		s += "Subkeys:" + "\n";
+		int i = 1;
+		for (String subKey: subKeys)
+		{
+			s += "Subkey " + formatSpaces(i) + ": " + subKey + "\n";
+			i++;
+		}
+		System.out.println(s);
+	}
+	
+	private String formatSpaces(int i)
+	{
+		if (i < 10)
+			return "" + i + "  ";
+		else
+			return "" + i + " ";
+	}
 		
-		this.key = convertStringToBinary(key).substring(0, 56);
-		subKeys = generateSubKeys();
+	public String processData(String data, processingMode mode)
+	{
+		String paddedData = padWithSpaces(data);
+		LinkedList<Integer> decimalData = convertToDecimal(paddedData);
+		LinkedList<String> binaryData = convertToBinary(decimalData);
+		LinkedList<String> blocks = segmentIntoBlocks(binaryData);
+		
 		switch (mode)
 		{
 			case ENCRYPT: 
-				return executeFeistel(data, subKeys);
+				return processBlocks(blocks, subKeys);
 			case DECRYPT:
-				return executeFeistel(data, reverseOrderSubKeys());
+				return processBlocks(blocks, reverseOrderSubKeys());				//Decryption uses keys in reverse order
 		}
 		return null;
+	}
+	
+	private String padWithSpaces(String data)
+	{
+		if (data.length() % 2 != 0)
+			return (data + " ");													//Pad with SPACE
+		return data;
 	}
 	
 	private LinkedList<Integer> convertToDecimal(String data)
@@ -131,34 +182,39 @@ public class DES
 		return decimals;
 	}
 	
-	private LinkedList<String> convertToBinary(LinkedList<Integer> decimalData)	//returns list of each character in binary
+	private LinkedList<String> convertToBinary(LinkedList<Integer> decimalData)		//Returns list of each character in binary
 	{
 		LinkedList<String> binaryData = new LinkedList<String>();
 		for (int i = 0; i < decimalData.size(); i++)
 		{
 			int decimal = decimalData.get(i);
 			String binary = Integer.toBinaryString(decimal);
-			//while (binary.length() < 8)
-				//binary = "0" + binary;
 			binary = pad(binary, 8);
 			binaryData.add(binary);
 		}
 		return binaryData;
 	}
 	
-	private LinkedList<String> segment(LinkedList<String> binaryData)
+	private LinkedList<String> segmentIntoBlocks(LinkedList<String> binaryData)
 	{
 		LinkedList<String> blocks = new LinkedList<String>();
-		
+		for (int i = 0; i <= binaryData.size() - 2; i+=2)
+		{
+			String block = binaryData.get(i) + binaryData.get(i + 1);
+			blocks.add(block);
+		}
 		return blocks;
 	}
 	
-	private String pad(String data, int totalBinaryDigits)
+	private String processBlocks(LinkedList<String> blocks, LinkedList<String> subKeys)			//Implement CBC at later stage
 	{
-		String paddedData = data;
-		while (paddedData.length() < totalBinaryDigits)
-			paddedData = "0" + paddedData;
-		return paddedData;
+		LinkedList<String> processedBlocks = new LinkedList<String>();
+		for (String block: blocks)
+		{
+			String processedBlock = executeFeistel(block, subKeys);
+			processedBlocks.add(processedBlock);
+		}	
+		return convertBinaryToText(processedBlocks);											//Final text output (plain or cipher)
 	}
 	
 	private LinkedList<String> reverseOrderSubKeys()
@@ -169,71 +225,71 @@ public class DES
 		return subKeysReverse;
 	}
 	
-	private String executeFeistel(String data, LinkedList<String> subKeys)
+	//============================================================================================================== OPERATIONS:::
+	
+	private String executeFeistel(String block, LinkedList<String> subKeys)
+	{		
+		String entryLeft = block.substring(0, block.length() / 2);
+		String entryRight =block.substring(block.length() / 2, block.length());
+		
+		for (int i = 0; i < numberOfRounds; i++)	
+		{
+			String originalRight = entryRight;
+			String processedRight = feistelFunction(entryRight, subKeys.get(i)); //+ key
+			entryRight = performXOR(entryLeft, processedRight);
+			entryLeft = originalRight;
+		}
+		
+		return (entryRight + entryLeft);
+	}
+	
+	private String feistelFunction(String blockRightHalf, String roundKey)	//receives 8-bit half and 16-bit key
 	{
-		//Then, encrypt or decrypt each block by doing the below
-		//Execute 16 rounds of encryption (decryption uses the same process but reverse key order)
-		/*Each round:
-		 * 1. Split input into 2 halves
-		 * 2. Input right half into Feistel Function (F)
-		 * 3. Input round key into Feistel Function
-		 * 4. XOR left half with result of Feistel Function
-		 * 5. Place XOR result into the next round as right half
-		 * 6. Place original right half of current round into next round as left half
-		 * 7. After the last round, swap the left and right halves
-		 */
+		String compressedKey = roundKey.substring(0, roundKey.length() / 2);
+		
+		String leftHalf = blockRightHalf.substring(0, blockRightHalf.length() / 2);
+		String rightHalf = blockRightHalf.substring(blockRightHalf.length() / 2, blockRightHalf.length());
+		
+		String sBoxResult = performSubstitution(leftHalf) + performSubstitution(rightHalf);
+		String swapResult = performSwap(sBoxResult);
+		String invertResult = performInversion(swapResult);
+		String xorResult = performXOR(invertResult, compressedKey);
+		
+		return xorResult;
+	}
+	
+	private String convertBinaryToText(LinkedList<String> binaryData)
+	{	//Method assumes block size of 16 bit (may change later to account for larger block sizes)
+		String data = "";
+		for (String s: binaryData)
+		{
+			String char1Binary = s.substring(0, s.length() / 2);
+			String char2Binary = s.substring(s.length() / 2, s.length());
+			int char1Decimal = Integer.parseInt(char1Binary, 2);
+			int char2Decimal = Integer.parseInt(char2Binary, 2);
+			data += "" + (char)char1Decimal + (char)char2Decimal;
+		}
+		return data;
+	}
+	
+	private String performSubstitution(String data)
+	{
+		for (int i = 0; i < sBox.length; i++)
+		{
+			if (sBox[0][i].equals(data))
+				return sBox[1][i];
+		}
 		return null;
 	}
-	
-	private void constructSBox()
-	{
-		setInputSBoxValues();
 		
-		LinkedList<String> temp = new LinkedList<String>();
-		for (int i = 0; i < 16; i++)
-			temp.add(sBox[0][i]);
-		
-		setOutputSBoxValues(temp);
-	}
-	
-	private void setInputSBoxValues()
+	private String performSwap(String data)
 	{
-		for (int i = 0; i < 16; i++)
-		{
-			String inputValue = "" + Integer.toBinaryString(i);
-			//while (inputValue.length() < 4)
-				//inputValue = "0" + inputValue;		
-			sBox[0][i] = pad(inputValue, 4);
-		}
+		String leftHalf = data.substring(0, data.length() / 2);
+		String rightHalf = data.substring(data.length() / 2, data.length());
+		return (rightHalf + leftHalf);
 	}
 	
-	private void setOutputSBoxValues(LinkedList<String> temp)
-	{
-		Random rnd = new Random();
-		int randomIndex = 0;
-		for (int i = 0; i < 16; i++)
-		{
-			randomIndex = rnd.nextInt(16 - i);
-			String outputValue = temp.get(randomIndex);
-			temp.remove(randomIndex);
-			sBox[1][i] = outputValue;
-		}
-	}
-	
-	private String performXOR(String data1, String data2)
-	{
-		String result = "";
-		for (int i = 0; i < data1.length(); i++)
-		{
-			if (data1.charAt(i) == data2.charAt(i))
-					result += "0";
-			else
-				result += "1";
-		}
-		return result;
-	}
-	
-	private String performBitInversion(String data)
+	private String performInversion(String data)
 	{
 		String result = "";
 		for (int i = 0; i < data.length(); i++)
@@ -242,6 +298,19 @@ public class DES
 				result += "1";
 			else
 				result += "0";
+		}
+		return result;
+	}
+	
+	private String performXOR(String data1, String data2)
+	{
+		String result = "";
+		for (int i = 0; i < data1.length(); i++)
+		{
+			if (data1.charAt(i) == data2.charAt(i))
+				result += "0";
+			else
+				result += "1";
 		}
 		return result;
 	}
