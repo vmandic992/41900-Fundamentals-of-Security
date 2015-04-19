@@ -4,6 +4,7 @@ public class DES
 {
 	private String[][] sBox = new String[2][16]; //Using a 4-bit S-Box
 	private int numberOfRounds = 16;
+	private int charactersPerBlock = 8;
 	private String key;
 	private LinkedList<String> subKeys;
 	
@@ -21,10 +22,10 @@ public class DES
 	public DES(String key)
 	{
 		constructSBox();
-		//printSBox();
-		this.key = convertStringToBinary(key).substring(0, 16);				//Convert input key to binary, we only want the first 16 bits
-		this.subKeys = generateSubKeys();									//Generate 16 x 16-bit sub-keys
-		//printKeys();
+		printSBox();
+		this.key = convertStringToBinary(key).substring(0, 56);				//Convert input key to binary, we only want the first 56 bits
+		this.subKeys = generateSubKeys();									//Generate 16 x 56-bit sub-keys
+		printKeys();
 	}
 	
 	private void constructSBox()
@@ -88,7 +89,8 @@ public class DES
 		return binaryString;
 	}
 	
-	private LinkedList<String> generateSubKeys()							//Simple for now, but later might code it to be more complex
+	//TO BE MODIFIED: So that subkey generation process is more complex
+	private LinkedList<String> generateSubKeys()
 	{	
 		LinkedList<String> generatedKeys = new LinkedList<String>();
 		String shiftedKey = key;
@@ -165,9 +167,10 @@ public class DES
 	
 	private String padWithSpaces(String data)
 	{
-		if (data.length() % 2 != 0)
-			return (data + " ");													//Pad with SPACE
-		return data;
+		String paddedData = data;
+		while (paddedData.length() % charactersPerBlock != 0)
+			paddedData += " ";
+		return paddedData;
 	}
 	
 	private LinkedList<Integer> convertToDecimal(String data)
@@ -198,9 +201,11 @@ public class DES
 	private LinkedList<String> segmentIntoBlocks(LinkedList<String> binaryData)
 	{
 		LinkedList<String> blocks = new LinkedList<String>();
-		for (int i = 0; i <= binaryData.size() - 2; i+=2)
+		for (int i = 0; i <= binaryData.size() - charactersPerBlock; i += charactersPerBlock)
 		{
-			String block = binaryData.get(i) + binaryData.get(i + 1);
+			String block = "";
+			for (int j = i; j < (i + charactersPerBlock); j++)
+				block += binaryData.get(j);
 			blocks.add(block);
 		}
 		return blocks;
@@ -229,57 +234,70 @@ public class DES
 	
 	private String executeFeistel(String block, LinkedList<String> subKeys)
 	{		
-		String entryLeft = block.substring(0, block.length() / 2);
-		String entryRight =block.substring(block.length() / 2, block.length());
-		
+		String entryLeft = block.substring(0, block.length() / 2);					//32-bit if block is 64-bit
+		String entryRight =block.substring(block.length() / 2, block.length());		//32-bit if block is 64-bit
 		for (int i = 0; i < numberOfRounds; i++)	
 		{
 			String originalRight = entryRight;
 			String processedRight = feistelFunction(entryRight, subKeys.get(i)); //+ key
 			entryRight = performXOR(entryLeft, processedRight);
 			entryLeft = originalRight;
+			System.out.println(entryLeft + entryRight);
 		}
-		
 		return (entryRight + entryLeft);
 	}
 	
-	private String feistelFunction(String blockRightHalf, String roundKey)	//receives 8-bit half and 16-bit key
+	private String feistelFunction(String blockRightHalf, String roundKey)	//receives 32-bit block half and 56-bit key
 	{
-		String compressedKey = roundKey.substring(0, roundKey.length() / 2);
+		//String compressedKey = roundKey.substring(0, roundKey.length() / 2);
+		String compressedKey = roundKey.substring(0, 32); //For now, statically code it to be 32, will do compression P-Box later (56-bit to 32-bit)
 		
 		String leftHalf = blockRightHalf.substring(0, blockRightHalf.length() / 2);
 		String rightHalf = blockRightHalf.substring(blockRightHalf.length() / 2, blockRightHalf.length());
-		
+				
 		String sBoxResult = performSubstitution(leftHalf) + performSubstitution(rightHalf);
+		
 		String swapResult = performSwap(sBoxResult);
+		
 		String invertResult = performInversion(swapResult);
+		
 		String xorResult = performXOR(invertResult, compressedKey);
 		
 		return xorResult;
 	}
 	
 	private String convertBinaryToText(LinkedList<String> binaryData)
-	{	//Method assumes block size of 16 bit (may change later to account for larger block sizes)
+	{	//Method assumes block size of 16 bit (may change later to account for larger block sizes)	
 		String data = "";
 		for (String s: binaryData)
 		{
-			String char1Binary = s.substring(0, s.length() / 2);
-			String char2Binary = s.substring(s.length() / 2, s.length());
-			int char1Decimal = Integer.parseInt(char1Binary, 2);
-			int char2Decimal = Integer.parseInt(char2Binary, 2);
-			data += "" + (char)char1Decimal + (char)char2Decimal;
+			for (int i = 0; i <= ((charactersPerBlock * 8) - 8); i += 8)
+			{
+				String currentCharacter = s.substring(i, (i + 8));
+				int characterDecimal = Integer.parseInt(currentCharacter, 2);
+				data += (char)characterDecimal;
+			}
 		}
 		return data;
 	}
 	
 	private String performSubstitution(String data)
 	{
-		for (int i = 0; i < sBox.length; i++)
+		String sBoxResult = "";
+		String fourBitGroup = "";
+		for (int i = 0; i <= data.length() - 4; i += 4)
 		{
-			if (sBox[0][i].equals(data))
-				return sBox[1][i];
+			fourBitGroup = data.substring(i, (i + 4));
+			for (int j = 0; j < 16; j++)
+			{
+				if (sBox[0][j].equals(fourBitGroup))
+				{
+					sBoxResult += sBox[1][j];
+					break;
+				}
+			}
 		}
-		return null;
+		return sBoxResult;
 	}
 		
 	private String performSwap(String data)
@@ -287,6 +305,12 @@ public class DES
 		String leftHalf = data.substring(0, data.length() / 2);
 		String rightHalf = data.substring(data.length() / 2, data.length());
 		return (rightHalf + leftHalf);
+	}
+	
+	//Will be used later to compress key from 56 bits to 32 bits using compression P-Box
+	private String performCompression(String data)
+	{
+		return null;
 	}
 	
 	private String performInversion(String data)
