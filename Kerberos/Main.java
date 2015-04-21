@@ -9,7 +9,7 @@ public class Main
 		//DES TEST
 		DES des1 = new DES("Key1ABCDEF");
 		
-		String plaintext = "Hello world this is a test, with blocks of 64-bits";
+		String plaintext = "Hello World this is a test. Using 64-bit blocks.";
 		String encrypted = des1.processData(plaintext, DES.processingMode.ENCRYPT);
 		System.out.println("Plantext:   " + plaintext + "\n");
 		System.out.println("CipherText: " + encrypted + "\n");
