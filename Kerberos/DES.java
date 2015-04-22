@@ -3,6 +3,19 @@ import java.util.LinkedList;
 public class DES 
 {
 	private String[][] sBox = new String[2][16]; //Using a 4-bit S-Box
+	private int[] pBox = {1, 2, 3, 3, 0, 2, 1};
+	/* P-Box structure:
+	 * 	Index:	0	1	2	3	4	5	6
+	 * 			1	2	3	1	0	2	3
+	 * 		
+	 *  Bit 0 goes to bit 1
+	 *  Bit 1 goes to bit 2
+	 *  Bit 2 goes to bit 3
+	 *  Bit 3 goes to bit 1
+	 *  Bit 4 goes to bit 0
+	 *  Bit 5 goes to bit 2
+	 *  Bit 6 goes to bit 3
+	 */
 	private int numberOfRounds = 16;
 	private int charactersPerBlock = 8;
 	private String key;
@@ -97,6 +110,7 @@ public class DES
 		for (int i = 0; i < numberOfRounds; i++)
 		{
 			shiftedKey = performShift(shiftedKey, 1, shiftDirection.LEFT);
+			shiftedKey = performInversion(shiftedKey);
 			generatedKeys.add(shiftedKey);
 		}
 		return generatedKeys;
@@ -249,9 +263,9 @@ public class DES
 	
 	private String feistelFunction(String blockRightHalf, String roundKey)	//receives 32-bit block half and 56-bit key
 	{
-		//String compressedKey = roundKey.substring(0, roundKey.length() / 2);
-		String compressedKey = roundKey.substring(0, 32); //For now, statically code it to be 32, will do compression P-Box later (56-bit to 32-bit)
-		
+		//String compressedKey = roundKey.substring(0, 32); //For now, statically code it to be 32, will do compression P-Box later (56-bit to 32-bit)
+		String compressedKey = compressKey(roundKey);
+		//System.out.println("Round Key: " + compressedKey);
 		String leftHalf = blockRightHalf.substring(0, blockRightHalf.length() / 2);
 		String rightHalf = blockRightHalf.substring(blockRightHalf.length() / 2, blockRightHalf.length());
 				
@@ -308,9 +322,24 @@ public class DES
 	}
 	
 	//Will be used later to compress key from 56 bits to 32 bits using compression P-Box
-	private String performCompression(String data)
+	public String compressKey(String data)
 	{
-		return null;
+		String compressedKey = "";
+		LinkedList<String> sevenBitGroups = new LinkedList<String>();
+		
+		for (int i = 0; i <= data.length() - 7; i += 7)
+			sevenBitGroups.add(data.substring(i, i + 7));
+		
+		for (String s: sevenBitGroups)
+		{
+			char[] compressedGroup = new char[4];
+			for (int j = 0; j < s.length(); j++)
+				compressedGroup[pBox[j]] = s.charAt(j);
+			for (int k = 0; k < compressedGroup.length; k++)
+				compressedKey += compressedGroup[k];
+		}
+		
+		return compressedKey;
 	}
 	
 	private String performInversion(String data)
