@@ -3,7 +3,7 @@ import java.util.LinkedList;
 public class DES 
 {
 	private String[][] sBox = new String[2][16]; //Using a 4-bit S-Box
-	private int[] pBox = {1, 2, 3, 3, 0, 2, 1};
+	private int[] pBox = {1, 2, 3, 3, 0, 2, 1}; //PBOX
 	/* P-Box structure:
 	 * 	Index:	0	1	2	3	4	5	6
 	 * 			1	2	3	1	0	2	3
@@ -31,14 +31,19 @@ public class DES
 		LEFT, RIGHT
 	}
 	
+	public static enum blockCipherMode
+	{
+		ECB, CBC
+	}
+	
 	//Constructor should receive key
 	public DES(String key)
 	{
 		constructSBox();
-		printSBox();
+		//printSBox();
 		this.key = convertStringToBinary(key).substring(0, 56);				//Convert input key to binary, we only want the first 56 bits
 		this.subKeys = generateSubKeys();									//Generate 16 x 56-bit sub-keys
-		printKeys();
+		//printKeys();
 	}
 	
 	private void constructSBox()
@@ -162,7 +167,11 @@ public class DES
 			return "" + i + " ";
 	}
 		
-	public String processData(String data, processingMode mode)
+	
+	
+	
+	
+	public String processData(String data, blockCipherMode cipherMode, String IV, processingMode mode)
 	{
 		String paddedData = padWithSpaces(data);
 		LinkedList<Integer> decimalData = convertToDecimal(paddedData);
@@ -172,12 +181,16 @@ public class DES
 		switch (mode)
 		{
 			case ENCRYPT: 
-				return processBlocks(blocks, subKeys);
+				return processBlocks(blocks, subKeys, cipherMode, IV, mode);
 			case DECRYPT:
-				return processBlocks(blocks, reverseOrderSubKeys());				//Decryption uses keys in reverse order
+				return processBlocks(blocks, reverseOrderSubKeys(), cipherMode, IV, mode);				//Decryption uses keys in reverse order
 		}
 		return null;
 	}
+	
+	
+	
+	
 	
 	private String padWithSpaces(String data)
 	{
@@ -225,16 +238,59 @@ public class DES
 		return blocks;
 	}
 	
-	private String processBlocks(LinkedList<String> blocks, LinkedList<String> subKeys)			//Implement CBC at later stage
+	
+	
+	
+	
+	private String processBlocks(LinkedList<String> blocks, LinkedList<String> subKeys, blockCipherMode cipherMode, String IV, processingMode mode)
 	{
 		LinkedList<String> processedBlocks = new LinkedList<String>();
-		for (String block: blocks)
+		
+		switch(cipherMode)
 		{
-			String processedBlock = executeFeistel(block, subKeys);
-			processedBlocks.add(processedBlock);
-		}	
-		return convertBinaryToText(processedBlocks);											//Final text output (plain or cipher)
+			case ECB: //Electronic Code Book
+			{
+				for (String block: blocks)
+				{
+					String processedBlock = executeFeistel(block, subKeys);
+					processedBlocks.add(processedBlock);
+				}
+				return convertBinaryToText(processedBlocks);
+			}
+			
+			case CBC: //Cipher Block Chaining 
+			{
+				String previousBlock = pad(convertStringToBinary(IV), 64); //assume IV not null
+				for (String block: blocks)
+				{
+					switch (mode)
+					{
+						case ENCRYPT:
+						{
+							String chain = performXOR(block, previousBlock);
+							previousBlock = executeFeistel(chain, subKeys);
+							processedBlocks.add(previousBlock);
+							break;
+						}
+						case DECRYPT:
+						{
+							String decryptedBlock = executeFeistel(block, subKeys);
+							String chain = performXOR(decryptedBlock, previousBlock);
+							processedBlocks.add(chain);
+							previousBlock = block;
+							break;
+						}
+					}
+				}
+				return convertBinaryToText(processedBlocks);
+			}
+		}
+		return null;
 	}
+	
+	
+	
+	
 	
 	private LinkedList<String> reverseOrderSubKeys()
 	{
@@ -256,7 +312,7 @@ public class DES
 			String processedRight = feistelFunction(entryRight, subKeys.get(i)); //+ key
 			entryRight = performXOR(entryLeft, processedRight);
 			entryLeft = originalRight;
-			System.out.println(entryLeft + entryRight);
+			//System.out.println(entryLeft + entryRight);
 		}
 		return (entryRight + entryLeft);
 	}
