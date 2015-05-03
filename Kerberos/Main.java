@@ -6,7 +6,7 @@ public class Main
 	public static void main(String[] args) throws IOException
 	{
 		new KerberosSystem();
-		
+		/*
 		String capturePath = "TripleDESCapture.txt";
 		String capturePath2 = "TripleDESCapture2.txt";
 		
@@ -21,6 +21,6 @@ public class Main
 		
 		System.out.println("Message: " + message);
 		System.out.println("CipherText: " + cipher);
-		System.out.println("Plaintext: " + plaintext.trim());
+		System.out.println("Plaintext: " + plaintext.trim());*/
 	}
 }

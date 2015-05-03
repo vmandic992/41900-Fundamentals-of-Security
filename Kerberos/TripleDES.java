@@ -14,8 +14,11 @@ public class TripleDES
 	
 	public TripleDES(String key, String IV, String captureFilePath) throws IOException
 	{
-		file = new File(captureFilePath);
-		writer = new BufferedWriter(new FileWriter(file));
+		if (captureFilePath != null)
+		{
+			file = new File(captureFilePath);
+			writer = new BufferedWriter(new FileWriter(file));
+		}
 		splitKey(key);
 		this.IV = IV;
 		writeInitialCaptureData(key);
@@ -36,7 +39,8 @@ public class TripleDES
 	
 	private void writeToCapture(String data) throws IOException
 	{
-		writer.write(data);
+		if (file != null)
+			writer.write(data);
 	}
 	
 	private void splitKey(String mainKey)
@@ -83,7 +87,8 @@ public class TripleDES
 		
 		String result3 = new DES(key3, writer).processData(result2, cipherMode, IV, DES.processingMode.ENCRYPT);
 		
-		writer.close();
+		if (writer != null)
+			writer.close();
 		return result3;
 	}
 	
@@ -106,9 +111,11 @@ public class TripleDES
 		writeToCapture("STAGE 3: DES [DECRYPT] ==================================================================================================" + newLine);
 		writeToCapture("=========================================================================================================================" + newLine + newLine);
 		
+		//include code to trim off spaces at the end
 		String result3 = new DES(key1, writer).processData(result2, cipherMode, IV, DES.processingMode.DECRYPT);
 		
-		writer.close();
+		if (writer != null)
+			writer.close();
 		return result3;
 	}
 }

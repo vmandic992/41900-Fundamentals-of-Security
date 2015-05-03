@@ -5,7 +5,7 @@ import java.io.IOException;
 public class DES 
 {
 	private String[][] sBox = new String[2][16]; 	//S-Box (4 bit)
-	private int[] pBox = {1, 2, 3, 3, 0, 2, 1}; 	//P-Box (compression type - compresses 7 bits to 4 bits)
+	private int[] pBox = {3, 2, 0, 1, 0, 3, 2}; 	//P-Box (compression type - compresses 7 bits to 4 bits)
 	
 													/* P-Box array meaning:
 													 * 	Index:	0	1	2	3	4	5	6
@@ -69,7 +69,8 @@ public class DES
 	
 	private void writeToCapture(String data) throws IOException
 	{
-		writer.write(data + newLine);
+		if (writer != null)
+			writer.write(data + newLine);
 	}
 	
 	private void constructSBox()
@@ -142,7 +143,7 @@ public class DES
 		String s = "P-BOX (7 bits compressed to 4 bits)" + newLine;
 		s += "Bit at Position X goes to Position Y" + newLine;
 		s += "X: | 1 | 2 | 3 | 4 | 5 | 6 | 7 |" + newLine;
-		s += "Y: | 2 | 3 | 4 | 2 | 1 | 3 | 4 |" + newLine + newLine;
+		s += "Y: | 4 | 3 | 1 | 2 | 1 | 4 | 3 |" + newLine + newLine;
 		writeToCapture(s);
 	}
 	
