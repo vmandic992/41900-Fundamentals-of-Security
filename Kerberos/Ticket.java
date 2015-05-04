@@ -13,11 +13,12 @@ public class Ticket
 	
 	public String toString()
 	{
-		String s = "[TICKET_START]:" + "\n";
+		String s = "[START_TICKET]" + "\n";
+		s +=	   " Ticket Details" + "\n";
 		s += 	   " - Client Username: " + clientName + "\n";
 		s +=       " - Validity Period: " + validityPeriod + "\n";
 		s +=       " - Message:         " + message + "\n";
-		s +=	   "[TICKET_END]";
+		s +=	   "[END_TICKET]";
 		return s;
 	}
 }

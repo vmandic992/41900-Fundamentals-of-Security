@@ -1,7 +1,5 @@
 import java.util.*;
 import java.io.IOException;
-import java.sql.Timestamp;
-import java.util.Date;
 
 public class AuthenticationServer 
 {
@@ -61,7 +59,7 @@ public class AuthenticationServer
 	
 	public void receiveRequest(String request, Client client) throws IOException
 	{
-		printStepThree();
+		kerberos.printStepThree();
 		
 		System.out.println("Message received by AS: " + "\n\n" + request + "\n\n");
 		
@@ -76,36 +74,39 @@ public class AuthenticationServer
 	
 	private void respondToClient(String clientUsername, String clientPassword, Client client) throws IOException
 	{
-		printStepFour();
+		kerberos.printStepFour();
+		
 		String message = generateResponse(clientUsername, clientPassword);
 		System.out.println("AS then encrypts the message with the client's password ('" + clientPassword + "') \n\n" + message + "\n\n");
 		client.receiveASResponse(message);
 	}
 	
-	private void printStepThree()
+	private String getDate()
 	{
-		String s = "\n======================================================================";
-		s += 	   "\n>>> STEP 3: AS RECEIVES REQUEST AND LOOKS UP THE CLIENT'S PASSWORD <<<";
-		s +=       "\n======================================================================\n";
-		System.out.println(s);
+		String date = "" + c.get(Calendar.DATE) + "/";
+		date += + (c.get(Calendar.MONTH) + 1) + "/";
+		date += + c.get(Calendar.YEAR);
+		return date;
 	}
 	
-	private void printStepFour()
+	private Ticket createTicket(String clientUsername, String date)
 	{
-		String s = "\n=============================================================";
-		s += 	   "\n>>> STEP 4: AS GENERATES A RESPONSE TO SEND TO THE CLIENT <<<";
-		s +=       "\n=============================================================\n";
-		System.out.println(s);
+		String validity = "Valid until end of: " + date;
+		String ticketNote = "NOTE: Created by AS on " + date;
+		return new Ticket(clientUsername, validity, ticketNote);
 	}
 
 	private String generateResponse(String clientUsername, String clientPassword) throws IOException
 	{
-		String date = "" + c.get(Calendar.DATE) + "/" + (c.get(Calendar.MONTH) + 1) + "/" + c.get(Calendar.YEAR);
-		String validity = "Valid until end of: " + date;
-		Ticket ticket = new Ticket(clientUsername, validity, "NOTE: Created by AS on " + date);
+		String date = getDate();;
+		Ticket ticket = createTicket(clientUsername, date);
 		
 		String message = ticket.toString() + "\n";
-		message += "[TGS KEY AND CBC-IV]:" + "\n" + " - [START_KEY]" + symmetricKeyTGS + "[END_KEY][START_IV]" + initializationVectorTGS + "[END_IV]";
+		
+		message += "[TGS KEY AND CBC-IV]:" + "\n";
+		message += " - [START_KEY]" + symmetricKeyTGS;
+		message += "[END_KEY][START_IV]" + initializationVectorTGS + "[END_IV]";
+		
 		System.out.println("AS generates a plaintext message containing the TGS encryption key & IV, plus a new TICKET: \n\n" + message + "\n\n");
 		
 		return encryptMessage(message, clientPassword);

@@ -1,5 +1,7 @@
 public class Server 
 {
+	private String serverName;
+	
 	private String symmetricKeyServerTGS;
 	private String initializationVectorServerTGS;
 	
@@ -10,12 +12,12 @@ public class Server
 	private KerberosSystem kerberos;
 
 	
-	public Server(String blockCipherMode, KerberosSystem kerberos) 
+	public Server(String serverName, String blockCipherMode, KerberosSystem kerberos) 
 	{
+		this.serverName = serverName;
 		this.kerberos = kerberos;
 		this.blockCipherMode = blockCipherMode;
 		System.out.println(toString());
-		
 	}
 	
 	public String toString()
@@ -23,6 +25,11 @@ public class Server
 		String s = "Server [RSA Key Generator] \n\n";
 		//include keys/IVs
 		return s;
+	}
+	
+	public String getName()
+	{
+		return serverName;
 	}
 	
 }

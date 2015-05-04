@@ -55,7 +55,7 @@ public class KerberosSystem
 		
 		AS = new AuthenticationServer(blockCipherMode, this);
 		TGS = new TicketGrantingServer(blockCipherMode, this);
-		server = new Server(blockCipherMode, this);
+		server = new Server("RSA-KeyGen-Server", blockCipherMode, this);
 		
 		client = new Client("Andrew Scott", "Yippee ki-yay mthrfkr", blockCipherMode, this);
 	}
@@ -79,6 +79,38 @@ public class KerberosSystem
 		String s = "\n==============================================================================";
 		s += 	   "\n>>> STEP 2: CLIENT TRANSMITS PLAINTEXT REQUEST TO AS, TO ACCESS THE SERVER <<<";
 		s +=       "\n==============================================================================";
+		System.out.println(s);
+	}
+	
+	public void printStepThree()
+	{
+		String s = "\n======================================================================";
+		s += 	   "\n>>> STEP 3: AS RECEIVES REQUEST AND LOOKS UP THE CLIENT'S PASSWORD <<<";
+		s +=       "\n======================================================================\n";
+		System.out.println(s);
+	}
+	
+	public void printStepFour()
+	{
+		String s = "\n===============================================================================================";
+		s += 	   "\n>>> STEP 4: AS GENERATES A RESPONSE TO SEND TO THE CLIENT, ENCRYPTED WITH CLIENT'S PASSWORD <<<";
+		s +=       "\n===============================================================================================\n";
+		System.out.println(s);
+	}
+	
+	public void printStepFive()
+	{
+		String s = "\n============================================================================";
+		s += 	   "\n>>> STEP 5: CLIENT RECEIVES RESPONSE AND DECRYPTS IT WITH THEIR PASSWORD <<<";
+		s +=       "\n============================================================================\n";
+		System.out.println(s);
+	}
+	
+	public void printStepSix()
+	{
+		String s = "\n=============================================================================";
+		s += 	   "\n>>> STEP 6: CLIENT TRANSMITS TICKET, TIMESTAMP AND SERVER NAME TO THE TGS <<<";
+		s +=       "\n=============================================================================\n";
 		System.out.println(s);
 	}
 }
