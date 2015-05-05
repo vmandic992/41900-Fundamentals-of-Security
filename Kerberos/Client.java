@@ -11,6 +11,7 @@ public class Client
 	private String blockCipherMode;
 	private KerberosSystem kerberos;
 	
+	
 	public Client(String username, String password, String blockCipherMode, KerberosSystem kerberos) 
 	{
 		this.username = username;
@@ -20,34 +21,48 @@ public class Client
 		System.out.println(toString());
 	}
 	
+	
+	
 	public String toString()
 	{
-		String s = "Simulated Client \n\n";
+		String s = "Simulated Client ---------------------------------------------\n\n";
 		s +=       " - Username: " + username + "\n";
 		s +=       " - Password: " + password + "\n";
 		//include keys/IVs
 		return s;
 	}
 	
+	
+	
 	public void sendRequestToAS() throws IOException
 	{
 		String request = " > REQUEST: I want to authenticate and access network resources.\n";
 		request +=       "   USERNAME: " + username;
 		
-		System.out.println("\n" + "Client message to AS: " + "\n\n" + request + "\n");
+		System.out.println("\n" + "Client sends the following message to AS: " + "\n\n" + request + "\n");
+		
+		kerberos.pauseSimulation();
 		
 		kerberos.AS.receiveRequest(request, this);
 	}
 		
+	
+	
 	public void receiveASResponse(String message) throws IOException
 	{
 		kerberos.printStepFive();
 		
-		System.out.println("Client receives encrypted message from AS: " + "\n\n" + message + "\n\n");
+		System.out.println("1. Client receives encrypted message from AS: " + "\n\n" + message + "\n\n");
+				
 		String plaintext = encryptOrDecrypt(message, password, initializationVectorAS, "TripleDESCapture2.txt", DES.processingMode.DECRYPT);
-		System.out.println("Client decrypts response with their password: " + "\n\n" + plaintext + "\n\n");
-		sendTicketToTGS(plaintext);
+		System.out.println("2. Client decrypts response with their password: " + "\n\n" + plaintext + "\n\n");
+		
+		kerberos.pauseSimulation();
+		
+		dissectMessage(plaintext);
 	}
+	
+	
 	
 	public String encryptOrDecrypt(String data, String key, String IV, String captureFilePath, DES.processingMode mode) throws IOException
 	{
@@ -57,27 +72,61 @@ public class Client
 			return (new TripleDES(key, null, captureFilePath).processData(data, DES.blockCipherMode.ECB, mode));
 	}
 	
-	private void sendTicketToTGS(String message)
+	
+	
+	private void dissectMessage(String messageFromAS) throws IOException
 	{
 		kerberos.printStepSix();
 
-		String ticket = 	extractBetweenTags(message, "[START_TICKET]", "[END_TICKET]");
-		String keyTGS = 	extractBetweenTags(message, "[START_KEY]", "[END_KEY]");
-		String ivTGS = 		extractBetweenTags(message, "[START_IV]", "[END_IV]");
+		System.out.println("1. Client extracts Ticket and TGS Key/IV from the decrypted response:" + "\n");
+		
+		String ticket = 	extractBetweenTags(messageFromAS, "[START_TICKET]" + "\n", "[END_TICKET]");
+		String keyTGS = 	extractBetweenTags(messageFromAS, "[START_TGS_KEY]", "[END_TGS_KEY]");
+		String ivTGS = 		extractBetweenTags(messageFromAS, "[START_TGS_IV]", "[END_TGS_IV]");
+		
+		String output = "Extracted Ticket:  -------------------------------------------- \n" + ticket + "\n";
+		output += 	    "Extracted TGS key: -------------------------------------------- \n" + " > " + keyTGS + "\n" + "\n";
+		output += 	    "Extracted TGS IV:  -------------------------------------------- \n" + " > " + ivTGS + "\n";
+		System.out.println(output + "\n\n");
+				
+		System.out.println("2. Client constructs a timestamp and obtains the resource server name:" + "\n");
+
 		String timestamp = 	generateTimeStamp();
 		String serverName = kerberos.server.getName();
 		
-		String messageToTGS = generateMessageToTGS(ticket, timestamp, serverName, keyTGS, ivTGS);
+		String output2 = "Timestamp:   --------------------------- \n" + " > " + timestamp + "\n\n";
+		output2 += 		 "Server Name: --------------------------- \n" + " > " + serverName + "\n";
+		
+		System.out.println(output2 + "\n\n");
+		
+		kerberos.pauseSimulation();
+		
+		transmitRequestToTGS(ticket, timestamp, serverName, keyTGS, ivTGS);
 	}
 	
-	private String generateMessageToTGS(String ticket, String timestamp, String serverName, String keyTGS, String ivTGS)
+	
+	
+	private void transmitRequestToTGS(String ticket, String timestamp, String serverName, String keyTGS, String ivTGS) throws IOException
 	{
+		kerberos.printStepSeven();
+
+		System.out.println("1. Client creates a message containing the Ticket, Server Name, and encrypted Timestamp (using TGS-Key/IV)" + "\n");
+
+		String encryptedTimestamp = encryptOrDecrypt(timestamp, keyTGS, ivTGS, "TripleDESCapture2.txt", DES.processingMode.ENCRYPT);
+		
 		String message = "";
-		//encrypt the timestamp (with TGS key and IV)
-		//send the rest in plaintext
-		//use delimiters (tags) for everything in the message
-		return "";
+		message += 	"[START_TICKET]" + "\n" + ticket + "[END_TICKET]" + "\n";
+		message +=  "[START_SERVER_NAME]" + serverName + "[END_SERVER_NAME]" + "\n";
+		message +=  "[START_TIMESTAMP]" + encryptedTimestamp + "[END_TIMESTAMP]";
+				
+		System.out.println(message + "\n\n");
+		
+		kerberos.pauseSimulation();
+		
+		kerberos.TGS.receiveRequest(message);
 	}
+	
+	
 	
 	private String extractBetweenTags(String m, String startTag, String endTag)
 	{
@@ -87,6 +136,8 @@ public class Client
 			return m.substring(startKeyIndex, endKeyIndex);
 		return null;
 	}
+	
+	
 	
 	private String generateTimeStamp()
 	{

@@ -45,6 +45,7 @@ public class TripleDES
 	
 	private void splitKey(String mainKey)
 	{
+		//MainKey may require padding if it's less than 21 characters
 		key1 = mainKey.substring(0, 7);			//1st 7 characters = key 1
 		key2 = mainKey.substring(7, 14);		//2nd 7 characters = key 2
 		key3 = mainKey.substring(14, 21);		//3rd 7 characters = key 3

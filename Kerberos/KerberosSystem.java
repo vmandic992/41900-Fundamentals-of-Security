@@ -57,7 +57,15 @@ public class KerberosSystem
 		TGS = new TicketGrantingServer(blockCipherMode, this);
 		server = new Server("RSA-KeyGen-Server", blockCipherMode, this);
 		
-		client = new Client("Andrew Scott", "Yippee ki-yay mthrfkr", blockCipherMode, this);
+		client = new Client("Andrew Scott", "Scotty_22_from_BOX-HQ", blockCipherMode, this);
+		
+		pauseSimulation();
+	}
+	
+	public void pauseSimulation()
+	{
+		System.out.print("<<< PRESS ENTER TO CONTINUE >>>");
+		String cont = scanner.nextLine();
 	}
 	
 	private void startKerberos() throws IOException
@@ -108,9 +116,25 @@ public class KerberosSystem
 	
 	public void printStepSix()
 	{
-		String s = "\n=============================================================================";
-		s += 	   "\n>>> STEP 6: CLIENT TRANSMITS TICKET, TIMESTAMP AND SERVER NAME TO THE TGS <<<";
-		s +=       "\n=============================================================================\n";
+		String s = "\n=====================================================";
+		s += 	   "\n>>> STEP 6: CLIENT EXTRACTS TICKET AND TGS KEY/IV <<<";
+		s +=       "\n=====================================================\n";
+		System.out.println(s);
+	}
+	
+	public void printStepSeven()
+	{
+		String s = "\n=========================================================";
+		s += 	   "\n>>> STEP 7: CLIENT CREATES MESSAGE TO SEND TO THE TGS <<<";
+		s +=       "\n=========================================================\n";
+		System.out.println(s);
+	}
+	
+	public void printStepEight()
+	{
+		String s = "\n======================================================================================";
+		s += 	   "\n>>> STEP 8: TGS RECEIVES MESSAGE, DECRYPTS TIMESTAMP AND VALIDATES THE INFORMATION <<<";
+		s +=       "\n======================================================================================\n";
 		System.out.println(s);
 	}
 }

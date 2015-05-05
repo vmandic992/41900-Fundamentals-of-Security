@@ -20,16 +20,31 @@ public class Server
 		System.out.println(toString());
 	}
 	
+	
 	public String toString()
 	{
-		String s = "Server [RSA Key Generator] \n\n";
+		String s = "Server ---------------------------------------------\n\n";
+		s += " - Name:    " + serverName + "\n";
+		s += " - Service: " + "RSA 512-bit key generator" + "\n\n";
 		//include keys/IVs
 		return s;
 	}
+	
 	
 	public String getName()
 	{
 		return serverName;
 	}
 	
+	
+	public void receiveSessionKey(String encryptedKey)
+	{
+		
+	}
+	
+	
+	public String receiveMessage(String cipher)
+	{
+		return "";
+	}
 }

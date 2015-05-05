@@ -7,7 +7,7 @@ public class Ticket
 	public Ticket(String clientName, String validityPeriod, String message)
 	{
 		this.clientName = clientName;
-		this.validityPeriod = validityPeriod;
+		this.validityPeriod = validityPeriod;	//fix validity period
 		this.message = message;
 	}
 	

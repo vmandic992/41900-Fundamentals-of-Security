@@ -25,19 +25,27 @@ public class AuthenticationServer
 		System.out.println(toString());
 	}
 	
+	
+	
 	public String toString()
 	{
-		String s = "Authentication Server \n\n";
+		String s = "Authentication Server ---------------------------------------------\n\n";
 		s +=       " - Database: " + printDatabase();
 		//include keys/IVs
 		return s;
 	}
 	
+	
+	
 	private void createDatabase()
 	{
-		database.add(new Login("Andrew Scott", "Yippee ki-yay mthrfkr"));
-		database.add(new Login("Vedran Mandic", "VedranMandicPassword1"));		
+		database.add(new Login("Andrew Scott" , "Scotty_22_from_BOX-HQ"));
+		database.add(new Login("Vedran Mandic", "xx_MiamiHotlinePro_xx"));	
+		database.add(new Login("Jeremiah Cruz", "MyLaptopBatteryIsFked"));	
+		database.add(new Login("Jason D'Souza", "UTS_IT_SUPPORT_BEAST!"));	
 	}
+	
+	
 	
 	public String printDatabase()
 	{
@@ -49,6 +57,8 @@ public class AuthenticationServer
 		return s;
 	}
 	
+	
+	
 	private String findPassword(String username)
 	{
 		for (Login l : database)
@@ -57,29 +67,40 @@ public class AuthenticationServer
 		return null;
 	}
 	
+	
+	
 	public void receiveRequest(String request, Client client) throws IOException
 	{
 		kerberos.printStepThree();
 		
-		System.out.println("Message received by AS: " + "\n\n" + request + "\n\n");
+		System.out.println("1. Message received by AS: " + "\n\n" + request + "\n\n");
 		
 		String clientUsername = request.substring(request.indexOf("USERNAME: ") + 10, request.length());	//extract username in request
 		String clientPassword = findPassword(clientUsername);
 		
-		System.out.println("AS extracts the username from the request: \n\n" + " > USERNAME: " + clientUsername + "\n\n");
-		System.out.println("AS then looks up username's corresponding password: \n\n" + " > PASSWORD: " + clientPassword);
+		System.out.println("2. AS extracts the username from the request: \n\n" + " > USERNAME: " + clientUsername + "\n\n");
+		System.out.println("3. AS then looks up username's corresponding password: \n\n" + " > PASSWORD: " + clientPassword + "\n\n");
+		
+		kerberos.pauseSimulation();
 		
 		respondToClient(clientUsername, clientPassword, client);
 	}
+	
+	
 	
 	private void respondToClient(String clientUsername, String clientPassword, Client client) throws IOException
 	{
 		kerberos.printStepFour();
 		
 		String message = generateResponse(clientUsername, clientPassword);
-		System.out.println("AS then encrypts the message with the client's password ('" + clientPassword + "') \n\n" + message + "\n\n");
+		System.out.println("2. AS then encrypts the message with the client's password ('" + clientPassword + "') \n\n" + message + "\n\n");
+		
+		kerberos.pauseSimulation();
+		
 		client.receiveASResponse(message);
 	}
+	
+	
 	
 	private String getDate()
 	{
@@ -89,6 +110,8 @@ public class AuthenticationServer
 		return date;
 	}
 	
+	
+	
 	private Ticket createTicket(String clientUsername, String date)
 	{
 		String validity = "Valid until end of: " + date;
@@ -96,6 +119,8 @@ public class AuthenticationServer
 		return new Ticket(clientUsername, validity, ticketNote);
 	}
 
+	
+	
 	private String generateResponse(String clientUsername, String clientPassword) throws IOException
 	{
 		String date = getDate();;
@@ -103,14 +128,15 @@ public class AuthenticationServer
 		
 		String message = ticket.toString() + "\n";
 		
-		message += "[TGS KEY AND CBC-IV]:" + "\n";
-		message += " - [START_KEY]" + symmetricKeyTGS;
-		message += "[END_KEY][START_IV]" + initializationVectorTGS + "[END_IV]";
+		message += "[START_TGS_KEY]" + symmetricKeyTGS + "[END_TGS_KEY]" + "\n";
+		message += "[START_TGS_IV]" + initializationVectorTGS + "[END_TGS_IV]";
 		
-		System.out.println("AS generates a plaintext message containing the TGS encryption key & IV, plus a new TICKET: \n\n" + message + "\n\n");
+		System.out.println("1. AS generates a plaintext message containing the TGS encryption key & IV, plus a new TICKET: \n\n" + message + "\n\n");
 		
 		return encryptMessage(message, clientPassword);
 	}
+	
+	
 	
 	private String encryptMessage(String m, String key) throws IOException
 	{
