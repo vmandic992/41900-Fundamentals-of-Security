@@ -5,9 +5,9 @@ public class TicketGrantingServer
 {
 	private String keyTGS = "MyAwesomeTripleDESKey"; //will be randomly generated
 	private String ivTGS = "IP0M1S55"; //will be randomly generated
-
-	private String keyServerTGS;
-	private String ivServerTGS;
+	
+	private String keyServerTGS = "123456789ABCDEFGHIJKL";	//will be randomly generated
+	private String ivServerTGS = "12345678"; //will be randomly generated
 	
 	private String blockCipherMode;
 	private KerberosSystem kerberos;
@@ -24,8 +24,16 @@ public class TicketGrantingServer
 	
 	public String toString()
 	{
-		String s = "Ticket Granting Server ---------------------------------------------\n\n";
-		//include keys/IVs
+		String s = "Ticket Granting Server -------------------------------------------------------\n\n";
+		s +=       " - Specializes in receiving Tickets submitted by Clients, and validating them." + "\n";
+		s +=	   " - Creates session keys/IVs for Client/Server communication." + "\n\n";
+		s +=       " - Configured with a Symmetric Encryption Key and Initialization Vector." + "\n";
+		s +=	   "    > TGS-KEY:    " + keyTGS + "\n";
+		s +=       "    > TGS-IV:     " + ivTGS + "\n\n";
+		s +=	   " - Also configured with a Key and IV to use with the Resource Server." + "\n";
+		s +=	   "    > TGS/S-KEY: " + keyServerTGS + "\n";
+		s +=	   "    > TGS/S-IV:  " + ivServerTGS + "\n\n";
+
 		return s;
 	}
 	
@@ -50,6 +58,10 @@ public class TicketGrantingServer
 				
 		System.out.println("2. TGS decrypts Timestamp with its own key/IV:" + "\n");
 		System.out.println("Decrypted Timestamp:    -------------------------------------------- \n" + " > " + decryptedTimestamp + "\n");
+		
+		//code here for validating info in the message
+		
+		generateSessionKey();
 	}
 	
 	
@@ -71,5 +83,17 @@ public class TicketGrantingServer
 			return (new TripleDES(key, IV, captureFilePath).processData(data, DES.blockCipherMode.CBC, mode));
 		else
 			return (new TripleDES(key, null, captureFilePath).processData(data, DES.blockCipherMode.ECB, mode));
+	}
+	
+	
+	public void generateSessionKey()
+	{
+		//code here for constructing key and IV:
+		String clientServerKey = "";
+		String clientServerIV = "";
+		
+		//code here for encrypting key and IV (with tags) and sending to server
+		
+		//code here for encrypting key and IV (with tags) and sending to client
 	}
 }

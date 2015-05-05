@@ -29,9 +29,11 @@ public class AuthenticationServer
 	
 	public String toString()
 	{
-		String s = "Authentication Server ---------------------------------------------\n\n";
-		s +=       " - Database: " + printDatabase();
-		//include keys/IVs
+		String s = "Authentication Server ------------------------------------------------------------------\n\n";
+		s +=       " - Specializes in authenticating users and generating Tickets for submission to the TGS." + "\n";
+		s +=       " - Already knows the TGS Symmetric Encryption Key and Initialization Vector (IV)." + "\n";
+		s +=       " - Contains a database with 4 Users; each with a Username and Password." + "\n\n";
+		s +=       " - User Database: " + printDatabase();
 		return s;
 	}
 	

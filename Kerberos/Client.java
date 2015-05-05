@@ -26,9 +26,9 @@ public class Client
 	public String toString()
 	{
 		String s = "Simulated Client ---------------------------------------------\n\n";
+		s +=	   " - Wants to access a Resource Server." + "\n\n";
 		s +=       " - Username: " + username + "\n";
 		s +=       " - Password: " + password + "\n";
-		//include keys/IVs
 		return s;
 	}
 	

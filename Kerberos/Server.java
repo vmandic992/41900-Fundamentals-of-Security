@@ -2,11 +2,11 @@ public class Server
 {
 	private String serverName;
 	
-	private String symmetricKeyServerTGS;
-	private String initializationVectorServerTGS;
+	private String keyServerTGS = "123456789ABCDEFGHIJKL";	//will be randomly generated
+	private String ivServerTGS = "12345678"; //will be randomly generated
 	
-	private String symmetricKeyClientServer;
-	private String initializationVectorClientServer;
+	private String keyClientServer; //will be randomly generated
+	private String ivClientServer; //will be randomly generated
 	
 	private String blockCipherMode;
 	private KerberosSystem kerberos;
@@ -24,9 +24,12 @@ public class Server
 	public String toString()
 	{
 		String s = "Server ---------------------------------------------\n\n";
-		s += " - Name:    " + serverName + "\n";
-		s += " - Service: " + "RSA 512-bit key generator" + "\n\n";
-		//include keys/IVs
+		s +=       " - Acts as a network resource to Clients." + "\n\n";
+		s +=       " - Name:    " + serverName + "\n";
+		s +=       " - Service: " + "RSA 512-bit key generator" + "\n\n";
+		s +=	   " - Also configured with a Key and IV to use with the TGS." + "\n";
+		s +=	   "    > S/TGS-KEY: " + keyServerTGS + "\n";
+		s +=	   "    > S/TGS-IV:  " + ivServerTGS + "\n\n";
 		return s;
 	}
 	

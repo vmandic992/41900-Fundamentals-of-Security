@@ -53,6 +53,15 @@ public class KerberosSystem
 	{
 		printStepOne();
 		
+		/*  BEFORE creating AS and TGS
+		 *    - Create random TGS-key and TGS-IV
+		 *    - Create AS and TGS, passing the TGS-key and TGS-IV into both of them
+		 *    
+		 *  BEFORE creating TGS and Server
+		 *    - Create random TGS/Server-key and TGS/Server-IV
+		 *    - Create TGS and Server, passing the TGS/Server-key and TGS/Server-IV into both of them
+		 */
+		
 		AS = new AuthenticationServer(blockCipherMode, this);
 		TGS = new TicketGrantingServer(blockCipherMode, this);
 		server = new Server("RSA-KeyGen-Server", blockCipherMode, this);
