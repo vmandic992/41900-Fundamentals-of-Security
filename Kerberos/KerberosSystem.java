@@ -3,32 +3,35 @@ import java.util.*;
 
 public class KerberosSystem 
 {
-	public AuthenticationServer AS;
-	public TicketGrantingServer TGS;
-	public LinkedList<Server> servers = new LinkedList<Server>();
-	public Client client;
-	
-	private String blockCipherMode;
 	private Scanner scanner = new Scanner(System.in);
 	
+	//Servers and Client
+	public AuthenticationServer AS;
+	public TicketGrantingServer TGS;
+	public LinkedList<Server> servers = new LinkedList<Server>(); //will only hold 1 server (RSA key generator)
+	public Client client;										  //used to hold the simulated client
+	
+	//Holds the chosen block-cipher mode (ECB or CBC)
+	private String blockCipherMode;
+	
+	//If both are true, then the client and server can start communicating
 	public boolean clientHasKey = false;
 	public boolean serverHasKey = false;
 	
 	
 	public KerberosSystem() throws IOException 
 	{
-		showWelcomeText();
+		showWelcomeText();				//introduce program
+		displayCaptureFiles();			//display the text file names which will capture encryption/decryption output
 		
-		displayCaptureFiles();
+		pauseSimulation();				//STOP, let the user read
+		setBlockCipherMode();			//prompt the user to enter ECB or CBC for block-cipher mode
 		
-		pauseSimulation();
-		
-		setBlockCipherMode();
-		createServersAndClient();
-		
-		startKerberos();
+		createServersAndClient();		//create entities
+		startKerberos();				//everything's setup, now start Kerberos
 	}
 	
+	//Introduces the program
 	private void showWelcomeText()
 	{
 		String s = "Welcome to this simulation of a basic Kerberos system! \n\n";
@@ -36,6 +39,9 @@ public class KerberosSystem
 		System.out.println(s);
 	}
 	
+	//Prints all the text files used for capturing all operations of encryption & decryption
+	//Each time an encryption or decryption occurs, a separate file is used
+	//This lets the viewer choose which specific encryption or decryption they want to analyze
 	private void displayCaptureFiles()
 	{
 		String s = "All ENCRYPTION and DECRYPTION operations are captured to output text files: \n\n";
@@ -48,12 +54,13 @@ public class KerberosSystem
 		s +=	   " 7.  'Client_Decrypt_From_TGS'     ---   When Client decrypts Client/Server key from TGS \n";
 		s +=	   " 8.  'Server_Decrypt_From_TGS'     ---   When Server decrypts Client/Server key from TGS \n";
 		s +=       " 9.  'Client_Encrypt_To_Server'    ---   When Client sends request to Server \n";
-		s +=	   " 10.  'Server_Decrypt_From_Client'  ---   When Server decrypts Client request \n";
+		s +=	   " 10. 'Server_Decrypt_From_Client'  ---   When Server decrypts Client request \n";
 		s +=       " 11. 'Server_Encrypt_To_Client'    ---   When Server sends RSA keys to Client \n";
 		s +=       " 12. 'Client_Decrypt_From Server'  ---   When Client decrypts RSA keys from Server \n\n";
 		System.out.println(s);
 	}
 	
+	//Prompts the user to enter which block-cipher mode to use
 	private void setBlockCipherMode()
 	{
 		String s = "\nThis code uses 168-bit TripleDES encryption, using 64-bit blocks. \n\n";
@@ -66,6 +73,7 @@ public class KerberosSystem
 		blockCipherMode = getEncryptionMode(s);
 	}
 	
+	//Prompts the user to enter which block-cipher mode to use
 	private String getEncryptionMode(String prompt)
 	{
 		System.out.print(prompt);
@@ -94,8 +102,13 @@ public class KerberosSystem
 		AS = new AuthenticationServer(blockCipherMode, this);
 		TGS = new TicketGrantingServer(blockCipherMode, this);
 		servers.add(new Server("RSA-KeyGen-Server", "512-bit RSA key-pair generator", blockCipherMode, this));
-		client = new Client("Andrew Scott", "Scotty_22_from_BOX-HQ", blockCipherMode, this);
 		
+		//Choose which client to use (hard-coded for now)
+		client = new Client("Andrew Scott" , "Scotty_22_from_BOX-HQ", blockCipherMode, this);
+		//client = new Client("Vedran Mandic", "xx_MiamiHotlinePro_xx", blockCipherMode, this);	
+		//client = new Client("Jeremiah Cruz", "MyLaptopBatteryIsShit", blockCipherMode, this);	
+		//client = new Client("Jason D'Souza", "UTS_IT_SUPPORT_BEAST!", blockCipherMode, this);	
+
 		pauseSimulation();
 	}
 	
@@ -109,11 +122,12 @@ public class KerberosSystem
 	{
 		printStepTwo();
 		client.sendRequestToAS();
-		/*
+		
 		if (sessionIsEstablished())
 		{
+			printStepTwelve();
 			client.requestRSAKeys();
-		}*/
+		}
 	}
 	
 	private boolean sessionIsEstablished()
@@ -123,7 +137,7 @@ public class KerberosSystem
 	
 	public void abortWithError(String error)
 	{
-		
+		System.out.println("ALERT > KERBEROS ABORTED \n" + error);
 	}
 	
 	private void printStepOne()
@@ -187,6 +201,38 @@ public class KerberosSystem
 		String s = "\n======================================================================================";
 		s += 	   "\n>>> STEP 8: TGS RECEIVES MESSAGE, DECRYPTS TIMESTAMP AND VALIDATES THE INFORMATION <<<";
 		s +=       "\n======================================================================================\n";
+		System.out.println(s);
+	}
+	
+	public void printStepNine()
+	{
+		String s = "\n=======================================================";
+		s += 	   "\n>>> STEP 9: TGS GENERATES CLIENT/SERVER SESSION KEY <<<";
+		s +=       "\n=======================================================\n";
+		System.out.println(s);
+	}
+	
+	public void printStepTen()
+	{
+		String s = "\n================================================================================";
+		s += 	   "\n>>> STEP 10: TGS ENCRYPTS SESSION KEY AND SENDS IT TO BOTH CLIENT AND SERVER <<<";
+		s +=       "\n================================================================================\n";
+		System.out.println(s);
+	}
+	
+	public void printStepEleven()
+	{
+		String s = "\n=============================================================================================";
+		s += 	   "\n>>> STEP 11: CLIENT AND SERVER RECEIVE ENCRYPTED SESSION KEY AND DECRYPT IT INDEPENDENTLY <<<";
+		s +=       "\n=============================================================================================\n";
+		System.out.println(s);
+	}
+	
+	public void printStepTwelve()
+	{
+		String s = "\n====================================================================================";
+		s += 	   "\n>>> STEP 12: CLIENT AND SERVER USE DECRYPTED SESSION KEY TO SECURELY COMMUNICATE <<<";
+		s +=       "\n====================================================================================\n";
 		System.out.println(s);
 	}
 }

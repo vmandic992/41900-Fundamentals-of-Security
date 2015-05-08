@@ -59,9 +59,11 @@ public class TicketGrantingServer
 		output += 	    "Extracted Timestamp:    -------------------------------------------- \n" + " > " + encryptedTimestamp + "\n";
 		System.out.println(output + "\n\n");
 				
-		System.out.println("3. TGS decrypts Timestamp with its own key/IV:" + "\n");
+		System.out.println("3. TGS decrypts Timestamp with its own TGS-key:" + "\n");
 		String decryptedTimestamp = encryptOrDecrypt(encryptedTimestamp, keyTGS, ivTGS, "TGS_Decrypt_From_Client.txt", DES.processingMode.DECRYPT);
 		System.out.println("Decrypted Timestamp:    -------------------------------------------- \n" + " > " + decryptedTimestamp + "\n");
+		
+		kerberos.pauseSimulation();
 		
 		validateRequestAndProceed(ticket, decryptedTimestamp, serverName);
 	}
@@ -106,7 +108,7 @@ public class TicketGrantingServer
 		{
 			kerberos.abortWithError("ERROR!!! Invalid ticket; passed expiration date");
 		}
-		generateSessionKey(serverName);
+		//generateSessionKey(serverName);
 	}
 	
 	
@@ -138,20 +140,53 @@ public class TicketGrantingServer
 	
 	public void generateSessionKey(String serverName) throws IOException
 	{
+		kerberos.printStepNine();
+		
 		//code here for constructing key and IV:
 		String clientServerKey = "newClientServerKey123";		//hard-coded for now
 		String clientServerIV =  "12345678";					//hard-coded for now
 		
 		String plaintextKey = "[START_KEY]" + clientServerKey + "[END_KEY]";
-		plaintextKey +=		  "[END_IV]" + clientServerIV + "[END_IV]";
+		plaintextKey +=		  "[START_IV]" + clientServerIV + "[END_IV]";
 		
-		String encryptedKeyToServer = encryptOrDecrypt(plaintextKey, keyServerTGS, ivServerTGS, "TGS_Encrypt_To_Server.txt", DES.processingMode.ENCRYPT);
-		String encryptedKeyToClient = encryptOrDecrypt(plaintextKey, keyTGS, ivTGS, "TGS_Encrypt_To_Client.txt", DES.processingMode.ENCRYPT);
+		System.out.println("1. TGS creates a random 168-bit (21 character) Triple-DES key: " + "\n");
+		System.out.println("   > Key:      " + clientServerKey + "\n\n");
+
+		System.out.println("2. TGS creates a random 64-bit (8 character) Initialization Vector: " + "\n");
+		System.out.println("   > IV:       " + clientServerIV + "\n\n");
 		
 		Server server = findServer(serverName);
 		
+		System.out.println("3. TGS uses extracted Server Name to find correct server: " + "\n");
+		System.out.println("   > Server:   " + serverName + "\n\n");
+		
+		kerberos.pauseSimulation();
+		
+		sendKeyToClientAndServer(plaintextKey, server, kerberos.client);	
+	}
+	
+	
+	private void sendKeyToClientAndServer(String key, Server server, Client client) throws IOException
+	{
+		kerberos.printStepTen();
+		
+		System.out.println("1. TGS creates TWO copies of a message containing the key and IV: " + "\n");
+		System.out.println("   > Message:  " + key + "\n\n");
+		
+		String encryptedKeyToServer = encryptOrDecrypt(key, keyServerTGS, ivServerTGS, "TGS_Encrypt_To_Server.txt", DES.processingMode.ENCRYPT);
+		String encryptedKeyToClient = encryptOrDecrypt(key, keyTGS, ivTGS, "TGS_Encrypt_To_Client.txt", DES.processingMode.ENCRYPT);
+		
+		System.out.println("2. TGS encrypts the 1st copy with the Server/TGS key, and sends it to Server: " + "\n");
+		System.out.println("   > Message to Server:  " + encryptedKeyToServer + "\n\n");
+		
+		System.out.println("3. TGS encrypts the 2nd copy with the TGS key, and sends it to Client: " + "\n");
+		System.out.println("   > Message to Client:  " + encryptedKeyToClient + "\n\n");
+
+		kerberos.pauseSimulation();
+		kerberos.printStepEleven();
+		
 		server.receiveSessionKey(encryptedKeyToServer);
-		kerberos.client.receiveSessionKey(encryptedKeyToClient);
+		client.receiveSessionKey(encryptedKeyToClient);
 	}
 	
 	

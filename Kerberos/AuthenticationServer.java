@@ -73,10 +73,10 @@ public class AuthenticationServer
 		
 		System.out.println("1. Message received by AS: " + "\n\n" + request + "\n\n");
 		
-		String clientUsername = request.substring(request.indexOf("USERNAME: ") + 10, request.length());
-		String clientPassword = findPassword(clientUsername);
-		
+		String clientUsername = extractClientUsername(request);
 		System.out.println("2. AS extracts the username from the request: \n\n" + " > USERNAME: " + clientUsername + "\n\n");
+		
+		String clientPassword = findPassword(clientUsername);
 		System.out.println("3. AS then looks up username's corresponding password from its database: \n\n" + " > PASSWORD: " + clientPassword + "\n\n");
 		
 		kerberos.pauseSimulation();
@@ -85,13 +85,22 @@ public class AuthenticationServer
 	}
 	
 	
+	private String extractClientUsername(String request)
+	{
+		int start = request.indexOf("USERNAME: ") + 10;
+		int end = request.length();
+		return request.substring(start, end);
+	}
+	
 	
 	private void respondToClient(String clientUsername, String clientPassword, Client client) throws IOException
 	{
 		kerberos.printStepFour();
 		
 		String message = generateResponse(clientUsername, clientPassword);
-		System.out.println("2. AS then encrypts the message with the client's password ('" + clientPassword + "') \n\n" + message + "\n\n");
+		
+		System.out.println("2. AS then encrypts the message with the client's password ('" 
+				+ clientPassword + "') \n\n" + message + "\n\n");
 		
 		kerberos.pauseSimulation();
 		
@@ -102,21 +111,21 @@ public class AuthenticationServer
 	
 	private String generateResponse(String clientUsername, String clientPassword) throws IOException
 	{
-		String date = getExpiryDate();;
-		Ticket ticket = createTicket(clientUsername, date);
+		String expiration = getTicketExpiryDate();;
+		Ticket ticket = createTicket(clientUsername, expiration);
 		
-		String message = ticket.toString() + "\n";
+		String messageToClient = ticket.toString() + "\n";
+		messageToClient += "[START_TGS_KEY]" + keyTGS + "[END_TGS_KEY]" + "\n";
+		messageToClient += "[START_TGS_IV]" + ivTGS + "[END_TGS_IV]";
 		
-		message += "[START_TGS_KEY]" + keyTGS + "[END_TGS_KEY]" + "\n";
-		message += "[START_TGS_IV]" + ivTGS + "[END_TGS_IV]";
+		System.out.println("1. AS generates a plaintext message containing a new Ticket, "
+				+ "and the TGS encryption key & IV: \n\n" + messageToClient + "\n\n");
 		
-		System.out.println("1. AS generates a plaintext message containing the TGS encryption key & IV, plus a new TICKET: \n\n" + message + "\n\n");
-		
-		return encryptMessageToClient(message, clientPassword);
+		return encryptMessageToClient(messageToClient, clientPassword);
 	}
 	
 	
-	private String getExpiryDate()
+	private String getTicketExpiryDate()
 	{
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 		Calendar cal = Calendar.getInstance();
@@ -128,17 +137,18 @@ public class AuthenticationServer
 	
 	
 	
-	private Ticket createTicket(String clientUsername, String date)
+	private Ticket createTicket(String clientUsername, String expirationDate)
 	{
-		String validity = date;
 		String ticketNote = "NOTE: Present this ticket to TGS.";
-		return new Ticket(clientUsername, validity, ticketNote);
+		return new Ticket(clientUsername, expirationDate, ticketNote);
 	}
 	
 	
 	
 	private String encryptMessageToClient(String m, String key) throws IOException
 	{		
-		return (new TripleDES(key, null, "AS_Encrypt_To_Client.txt").processData(m,  DES.blockCipherMode.ECB, DES.processingMode.ENCRYPT));
+		//No IV will be used between the AS and Client, only ECB can be used for this transmission
+		return (new TripleDES(key, null, "AS_Encrypt_To_Client.txt").processData
+				(m,  DES.blockCipherMode.ECB, DES.processingMode.ENCRYPT));
 	}
 }

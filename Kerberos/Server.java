@@ -61,10 +61,20 @@ public class Server
 	
 	public void receiveSessionKey(String encryptedKey) throws IOException
 	{
+		System.out.println("Server receives encrypted session key: " + "\n");
+		System.out.println("   > Ciphertext:  " + encryptedKey + "\n\n");
+
 		String plaintext = encryptOrDecrypt(encryptedKey, keyServerTGS, ivServerTGS, "Server_Decrypt_From_TGS.txt", DES.processingMode.DECRYPT);
+		
+		System.out.println("Server decrypts message with the Server/TGS-key: " + "\n");
+		System.out.println("   > Plaintext:   " + plaintext + "\n\n");
 		
 		keyClientServer = extractBetweenTags(plaintext, "[START_KEY]", "[END_KEY]");
 		ivClientServer =  extractBetweenTags(plaintext, "[START_IV]", "[END_IV]");
+		
+		System.out.println("Server extracts the Session key & IV: " + "\n");
+		System.out.println("   > Key:         " + keyClientServer + "\n");
+		System.out.println("   > IV:          " + ivClientServer + "\n\n");
 		
 		kerberos.serverHasKey = true;
 	}
@@ -82,7 +92,15 @@ public class Server
 	
 	public void receiveClientRequest(String request, Client client) throws IOException
 	{
+		System.out.println("\n3. Server receives message from Client: " + "\n");
+		System.out.println("   > Ciphertext:   " + request + "\n\n");
+
 		String plaintext = encryptOrDecrypt(request, keyClientServer, ivClientServer, "Server_Decrypt_From_Client.txt", DES.processingMode.DECRYPT);
+	
+		System.out.println("4. Server decrypts message from Client: " + "\n");
+		System.out.println("   > Plaintext:    " + plaintext + "\n\n");
+		
+		kerberos.pauseSimulation();
 	}
 	
 	
