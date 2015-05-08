@@ -15,9 +15,9 @@ public class Ticket
 	{
 		String s = "[START_TICKET]" + "\n";
 		s +=	   " Ticket Details" + "\n";
-		s += 	   " - Client Username: " + clientName + "\n";
-		s +=       " - Validity Period: " + validityPeriod + "\n";
-		s +=       " - Message:         " + message + "\n";
+		s += 	   " - Client Username: " + clientName + "[/Name]" + "\n";
+		s +=       " - Issuer Message:  " + message + "[/Message]" + "\n";
+		s +=       " - Expiration Date: " + validityPeriod + "[/Date]" + "\n";
 		s +=	   "[END_TICKET]";
 		return s;
 	}

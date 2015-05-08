@@ -117,7 +117,7 @@ public class TripleDES
 		
 		if (writer != null)
 			writer.close();
-		return result3;
+		return result3.trim();
 	}
 }
 

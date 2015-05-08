@@ -1,4 +1,5 @@
 import java.io.IOException;
+import java.util.*;
 
 
 public class TicketGrantingServer 
@@ -11,6 +12,8 @@ public class TicketGrantingServer
 	
 	private String blockCipherMode;
 	private KerberosSystem kerberos;
+	
+	private LinkedList<String> timestamps = new LinkedList<String>();	//used for counter-attacking Replay Attack
 	
 	
 	public TicketGrantingServer(String blockCipherMode, KerberosSystem kerberos) 
@@ -39,29 +42,28 @@ public class TicketGrantingServer
 	
 	
 	
-	public void receiveRequest(String message) throws IOException
+	public void receiveRequest(String request) throws IOException
 	{
 		kerberos.printStepEight();
 		
-		System.out.println("1. TGS extracts Ticket, Server Name and encrypted Timestamp:" + "\n");
+		System.out.println("1. Message received by TGS: " + "\n\n" + request + "\n\n");
+		
+		System.out.println("2. TGS extracts Ticket, Server Name and encrypted Timestamp:" + "\n");
 
-		String encryptedTimestamp = extractBetweenTags(message, "[START_TIMESTAMP]", "[END_TIMESTAMP]");
-		String serverName =			extractBetweenTags(message, "[START_SERVER_NAME]", "[END_SERVER_NAME]");
-		String ticket =				extractBetweenTags(message, "[START_TICKET]", "[END_TICKET]");
-		String decryptedTimestamp = encryptOrDecrypt(encryptedTimestamp, keyTGS, ivTGS, "TripleDESCapture2.txt", DES.processingMode.DECRYPT);
-
+		String encryptedTimestamp = extractBetweenTags(request, "[START_TIMESTAMP]", "[END_TIMESTAMP]");
+		String serverName =			extractBetweenTags(request, "[START_SERVER_NAME]", "[END_SERVER_NAME]");
+		String ticket =				extractBetweenTags(request, "[START_TICKET]", "[END_TICKET]");
 		
 		String output = "Extracted Ticket:       -------------------------------------------- \n" + ticket + "\n";
 		output += 	    "Extracted Server Name:  -------------------------------------------- \n" + " > " + serverName + "\n" + "\n";
 		output += 	    "Extracted Timestamp:    -------------------------------------------- \n" + " > " + encryptedTimestamp + "\n";
 		System.out.println(output + "\n\n");
 				
-		System.out.println("2. TGS decrypts Timestamp with its own key/IV:" + "\n");
+		System.out.println("3. TGS decrypts Timestamp with its own key/IV:" + "\n");
+		String decryptedTimestamp = encryptOrDecrypt(encryptedTimestamp, keyTGS, ivTGS, "TGS_Decrypt_From_Client.txt", DES.processingMode.DECRYPT);
 		System.out.println("Decrypted Timestamp:    -------------------------------------------- \n" + " > " + decryptedTimestamp + "\n");
 		
-		//code here for validating info in the message
-		
-		generateSessionKey();
+		validateRequestAndProceed(ticket, decryptedTimestamp, serverName);
 	}
 	
 	
@@ -86,14 +88,80 @@ public class TicketGrantingServer
 	}
 	
 	
-	public void generateSessionKey()
+	
+	private void validateRequestAndProceed(String ticket, String timestamp, String serverName) throws IOException
+	{
+		boolean timestampValid = validateTimestamp(timestamp);
+		boolean ticketExpired = validateTicket(ticket);
+		
+		if (timestampValid && ticketExpired)
+		{
+			generateSessionKey(serverName);
+		}
+		else if (!timestampValid)
+		{
+			kerberos.abortWithError("ERROR!!! Timestamp already exists, potential replay-attack detected.");
+		}
+		else if (!ticketExpired)
+		{
+			kerberos.abortWithError("ERROR!!! Invalid ticket; passed expiration date");
+		}
+		generateSessionKey(serverName);
+	}
+	
+	
+	private boolean validateTimestamp(String timestamp)
+	{
+		for (String s : timestamps)
+		{
+			if (s.equals(timestamp))
+				return false;
+		}
+		timestamps.add(timestamp);
+		return true;
+	}
+	
+	
+	private boolean validateTicket(String ticket)
+	{
+		/*
+		 * CODE HERE FOR VALIDATING TICKET EXPIRATION DATE (basically a way we can use the ticket...)
+		 * 
+		int dateStart = ticket.indexOf("Expiration Date: ") + 17;
+		int dateEnd = ticket.indexOf("[/Date]");
+		String expirationDate = ticket.substring(dateStart, dateEnd);
+		
+		*/
+		return true;
+	}
+	
+	
+	public void generateSessionKey(String serverName) throws IOException
 	{
 		//code here for constructing key and IV:
-		String clientServerKey = "";
-		String clientServerIV = "";
+		String clientServerKey = "newClientServerKey123";		//hard-coded for now
+		String clientServerIV =  "12345678";					//hard-coded for now
 		
-		//code here for encrypting key and IV (with tags) and sending to server
+		String plaintextKey = "[START_KEY]" + clientServerKey + "[END_KEY]";
+		plaintextKey +=		  "[END_IV]" + clientServerIV + "[END_IV]";
 		
-		//code here for encrypting key and IV (with tags) and sending to client
+		String encryptedKeyToServer = encryptOrDecrypt(plaintextKey, keyServerTGS, ivServerTGS, "TGS_Encrypt_To_Server.txt", DES.processingMode.ENCRYPT);
+		String encryptedKeyToClient = encryptOrDecrypt(plaintextKey, keyTGS, ivTGS, "TGS_Encrypt_To_Client.txt", DES.processingMode.ENCRYPT);
+		
+		Server server = findServer(serverName);
+		
+		server.receiveSessionKey(encryptedKeyToServer);
+		kerberos.client.receiveSessionKey(encryptedKeyToClient);
+	}
+	
+	
+	private Server findServer(String serverName)
+	{
+		for (Server server: kerberos.servers)
+		{
+			if (server.hasName(serverName))
+				return server;
+		}
+		return null;
 	}
 }

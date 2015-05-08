@@ -5,17 +5,23 @@ public class KerberosSystem
 {
 	public AuthenticationServer AS;
 	public TicketGrantingServer TGS;
-	public Server server;
+	public LinkedList<Server> servers = new LinkedList<Server>();
 	public Client client;
 	
 	private String blockCipherMode;
-	
 	private Scanner scanner = new Scanner(System.in);
+	
+	public boolean clientHasKey = false;
+	public boolean serverHasKey = false;
 	
 	
 	public KerberosSystem() throws IOException 
 	{
 		showWelcomeText();
+		
+		displayCaptureFiles();
+		
+		pauseSimulation();
 		
 		setBlockCipherMode();
 		createServersAndClient();
@@ -30,10 +36,33 @@ public class KerberosSystem
 		System.out.println(s);
 	}
 	
+	private void displayCaptureFiles()
+	{
+		String s = "All ENCRYPTION and DECRYPTION operations are captured to output text files: \n\n";
+		s +=	   " 1.  'AS_Encrypt_To_Client'        ---   When AS sends ticket & TGS key to Client \n";
+		s +=	   " 2.  'Client_Decrypt_From_AS'      ---   When Client decrypts ticket and TGS key from AS \n";
+		s +=	   " 3.  'Client_Encrypt_To_TGS'       ---   When Client sends timestamp to TGS \n";
+		s += 	   " 4.  'TGS_Decrypt_From_Client'     ---   When TGS decrypts timestamp from Client \n";
+		s +=	   " 5.  'TGS_Encrypt_To_Client'       ---   When TGS sends Client/Server key to Client \n";
+		s +=	   " 6.  'TGS_Encrypt_To_Server'       ---   When TGS sends Client/Server key to Server \n";
+		s +=	   " 7.  'Client_Decrypt_From_TGS'     ---   When Client decrypts Client/Server key from TGS \n";
+		s +=	   " 8.  'Server_Decrypt_From_TGS'     ---   When Server decrypts Client/Server key from TGS \n";
+		s +=       " 9.  'Client_Encrypt_To_Server'    ---   When Client sends request to Server \n";
+		s +=	   " 10.  'Server_Decrypt_From_Client'  ---   When Server decrypts Client request \n";
+		s +=       " 11. 'Server_Encrypt_To_Client'    ---   When Server sends RSA keys to Client \n";
+		s +=       " 12. 'Client_Decrypt_From Server'  ---   When Client decrypts RSA keys from Server \n\n";
+		System.out.println(s);
+	}
+	
 	private void setBlockCipherMode()
 	{
-		String s = "This code uses 168-bit TripleDES encryption, with 64-bit blocks. \n";
-		s += "Please enter the block-cipher mode to be used (ECB[default] or CBC): ";
+		String s = "\nThis code uses 168-bit TripleDES encryption, using 64-bit blocks. \n\n";
+		s += "Please decide which 'Block-Cipher Mode' to use: \n";
+		s += " - 'ECB': Each block is encrypted independently. \n";
+		s += " - 'CBC': Each block is encrypted after being XORed with previous ciphertext block.\n\n";
+		s += "NOTE: ECB will always be used between the CLIENT and AS. \n\n";
+		s += "Block-Cipher Mode: ('ECB' or 'CBC'): ";
+		
 		blockCipherMode = getEncryptionMode(s);
 	}
 	
@@ -64,8 +93,7 @@ public class KerberosSystem
 		
 		AS = new AuthenticationServer(blockCipherMode, this);
 		TGS = new TicketGrantingServer(blockCipherMode, this);
-		server = new Server("RSA-KeyGen-Server", blockCipherMode, this);
-		
+		servers.add(new Server("RSA-KeyGen-Server", "512-bit RSA key-pair generator", blockCipherMode, this));
 		client = new Client("Andrew Scott", "Scotty_22_from_BOX-HQ", blockCipherMode, this);
 		
 		pauseSimulation();
@@ -74,13 +102,28 @@ public class KerberosSystem
 	public void pauseSimulation()
 	{
 		System.out.print("<<< PRESS ENTER TO CONTINUE >>>");
-		String cont = scanner.nextLine();
+		scanner.nextLine();
 	}
 	
 	private void startKerberos() throws IOException
 	{
 		printStepTwo();
 		client.sendRequestToAS();
+		/*
+		if (sessionIsEstablished())
+		{
+			client.requestRSAKeys();
+		}*/
+	}
+	
+	private boolean sessionIsEstablished()
+	{
+		return (clientHasKey && serverHasKey);
+	}
+	
+	public void abortWithError(String error)
+	{
+		
 	}
 	
 	private void printStepOne()

@@ -1,11 +1,34 @@
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 
 
 public class Main 
 {
-	public static void main(String[] args) throws IOException
+	public static void main(String[] args) throws IOException, ParseException
 	{
 		new KerberosSystem();
+		
+		/*
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		Calendar cal = Calendar.getInstance();
+		cal.add(Calendar.HOUR_OF_DAY, 0);
+		String date1 = dateFormat.format(cal.getTime());
+		System.out.println("Valid until: " + date1);
+		
+		
+		String dateInMsg = date1;
+		SimpleDateFormat format = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		Date expiryDate = format.parse(dateInMsg);
+			
+		
+		Date currentDate = Calendar.getInstance().getTime();
+		System.out.println("Time now: " + currentDate);
+		System.out.println(currentDate.before(expiryDate));*/
+		
 		/*
 		String capturePath = "TripleDESCapture.txt";
 		String capturePath2 = "TripleDESCapture2.txt";
