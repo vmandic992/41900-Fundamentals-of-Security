@@ -4,8 +4,8 @@ import java.io.IOException;
 
 public class AuthenticationServer 
 {
-	private String keyTGS = "MyAwesomeTripleDESKey";
-	private String ivTGS = "IP0M1S55";
+	private String keyTGS;
+	private String ivTGS;
 		
 	private String blockCipherMode;
 	private KerberosSystem kerberos;
@@ -13,10 +13,12 @@ public class AuthenticationServer
 	LinkedList<Login> database = new LinkedList<Login>();
 	
 	
-	public AuthenticationServer(String blockCipherMode, KerberosSystem kerberos) 
+	public AuthenticationServer(String blockCipherMode, KerberosSystem kerberos, String keyTGS, String ivTGS) 
 	{
 		this.kerberos = kerberos;
 		this.blockCipherMode = blockCipherMode;
+		this.keyTGS = keyTGS;
+		this.ivTGS = ivTGS;
 		createDatabase();
 		System.out.println(toString());
 	}
@@ -24,10 +26,12 @@ public class AuthenticationServer
 	
 	
 	public String toString()
-	{
-		String s = "Authentication Server ------------------------------------------------------------------\n\n";
-		s +=       " - Specializes in authenticating users and generating Tickets for submission to the TGS." + "\n";
-		s +=       " - Already knows the TGS Symmetric Encryption Key and Initialization Vector (IV)." + "\n";
+	{                                     
+		String s = "AUTHENTICATION SERVER ___________________________________________________________________________\n\n";
+		s +=       " - Authenticates users and generates Tickets for submission to the TGS." + "\n\n";
+		s +=       " - Configured with the TGS Key and TGS IV." + "\n";
+		s +=	   "    > TGS-KEY:    " + keyTGS + "\n";
+		s +=       "    > TGS-IV:     " + ivTGS + "\n\n";
 		s +=       " - Contains a database with 4 Users; each with a Username and Password." + "\n\n";
 		s +=       " - User Database: " + printDatabase();
 		return s;
@@ -77,7 +81,7 @@ public class AuthenticationServer
 		System.out.println("2. AS extracts the username from the request: \n\n" + " > USERNAME: " + clientUsername + "\n\n");
 		
 		String clientPassword = findPassword(clientUsername);
-		System.out.println("3. AS then looks up username's corresponding password from its database: \n\n" + " > PASSWORD: " + clientPassword + "\n\n");
+		System.out.println("3. AS then looks up username's corresponding password from the database: \n\n" + " > PASSWORD: " + clientPassword + "\n\n");
 		
 		kerberos.pauseSimulation();
 		
@@ -100,7 +104,7 @@ public class AuthenticationServer
 		String message = generateResponse(clientUsername, clientPassword);
 		
 		System.out.println("2. AS then encrypts the message with the client's password ('" 
-				+ clientPassword + "') \n\n" + message + "\n\n");
+				+ clientPassword + "') - See 'AS_ENCRYPT_TO_CLIENT.txt' \n\n" + message + "\n\n");
 		
 		kerberos.pauseSimulation();
 		
@@ -118,8 +122,8 @@ public class AuthenticationServer
 		messageToClient += "[START_TGS_KEY]" + keyTGS + "[END_TGS_KEY]" + "\n";
 		messageToClient += "[START_TGS_IV]" + ivTGS + "[END_TGS_IV]";
 		
-		System.out.println("1. AS generates a plaintext message containing a new Ticket, "
-				+ "and the TGS encryption key & IV: \n\n" + messageToClient + "\n\n");
+		System.out.println("1. AS creates a plaintext message containing a new Ticket, "
+						   + "TGS-Key & TGS-IV: \n\n" + messageToClient + "\n\n");
 		
 		return encryptMessageToClient(messageToClient, clientPassword);
 	}

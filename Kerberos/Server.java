@@ -5,8 +5,8 @@ public class Server
 	private String serverName;
 	private String service;
 	
-	private String keyServerTGS = "123456789ABCDEFGHIJKL";	//will be randomly generated
-	private String ivServerTGS = "12345678"; //will be randomly generated
+	private String keyServerTGS;
+	private String ivServerTGS;
 	
 	private String keyClientServer; //will be randomly generated
 	private String ivClientServer; //will be randomly generated
@@ -15,25 +15,28 @@ public class Server
 	private KerberosSystem kerberos;
 
 	
-	public Server(String serverName, String service, String blockCipherMode, KerberosSystem kerberos) 
+	public Server(String serverName, String service, String blockCipherMode, KerberosSystem kerberos,
+				  String keyServerTGS, String ivServerTGS) 
 	{
 		this.serverName = serverName;
 		this.service = service;
 		this.kerberos = kerberos;
 		this.blockCipherMode = blockCipherMode;
+		this.keyServerTGS = keyServerTGS;
+		this.ivServerTGS = ivServerTGS;
 		System.out.println(toString());
 	}
 	
 	
 	public String toString()
 	{
-		String s = "Server ---------------------------------------------\n\n";
-		s +=       " - Acts as a network resource to Clients." + "\n\n";
+		String s = "\n\n RESOURCE SERVER ___________________________________________________________________________\n\n";
+		s +=       " - Provides a service for Clients." + "\n\n";
 		s +=       " - Name:    " + serverName + "\n";
 		s +=       " - Service: " + service + "\n\n";
-		s +=	   " - Also configured with a Key and IV to use with the TGS." + "\n";
-		s +=	   "    > S/TGS-KEY: " + keyServerTGS + "\n";
-		s +=	   "    > S/TGS-IV:  " + ivServerTGS + "\n\n";
+		s +=	   " - Configured with the TGS-Server Key and TGS-Server IV (to use with the TGS)" + "\n";
+		s +=	   "    > Server/TGS-KEY: " + keyServerTGS + "\n";
+		s +=	   "    > Server/TGS-IV:  " + ivServerTGS + "\n\n";
 		return s;
 	}
 	
@@ -61,18 +64,20 @@ public class Server
 	
 	public void receiveSessionKey(String encryptedKey) throws IOException
 	{
-		System.out.println("Server receives encrypted session key: " + "\n");
+		System.out.println("Server receives encrypted Client/Server-Key and Client/Server-IV: " + "\n");
 		System.out.println("   > Ciphertext:  " + encryptedKey + "\n\n");
 
 		String plaintext = encryptOrDecrypt(encryptedKey, keyServerTGS, ivServerTGS, "Server_Decrypt_From_TGS.txt", DES.processingMode.DECRYPT);
 		
-		System.out.println("Server decrypts message with the Server/TGS-key: " + "\n");
+		System.out.println("Server decrypts message with the Server/TGS-Key ('" + keyServerTGS + "') & Server/TGS-IV ('" + ivServerTGS + "'): "
+						    + " - See 'SERVER_DECRYPT_FROM_TGS.txt' \n");
+		
 		System.out.println("   > Plaintext:   " + plaintext + "\n\n");
 		
 		keyClientServer = extractBetweenTags(plaintext, "[START_KEY]", "[END_KEY]");
 		ivClientServer =  extractBetweenTags(plaintext, "[START_IV]", "[END_IV]");
 		
-		System.out.println("Server extracts the Session key & IV: " + "\n");
+		System.out.println("Server extracts the Client/Server-Key & Client/Server-IV: " + "\n");
 		System.out.println("   > Key:         " + keyClientServer + "\n");
 		System.out.println("   > IV:          " + ivClientServer + "\n\n");
 		
@@ -97,16 +102,32 @@ public class Server
 
 		String plaintext = encryptOrDecrypt(request, keyClientServer, ivClientServer, "Server_Decrypt_From_Client.txt", DES.processingMode.DECRYPT);
 	
-		System.out.println("4. Server decrypts message from Client: " + "\n");
+		System.out.println("4. Server decrypts message with the Client/Server-Key ('" + keyClientServer + "')"
+				+ " & Client/Server-IV ('" + ivClientServer + "') - See 'SERVER_DECRYPT_FROM_CLIENT.txt' \n");
 		System.out.println("   > Plaintext:    " + plaintext + "\n\n");
 		
 		kerberos.pauseSimulation();
-	}
-	
-	
-	private void transmitRSAKeys(Client client)
-	{
 		
+		transmitRSAKeys(client);
 	}
 	
+	
+	private void transmitRSAKeys(Client client) throws IOException
+	{
+		kerberos.printStepThirteen();
+		
+		RSA rsa = new RSA();
+		String message = rsa.toString();
+		
+		System.out.println("1. Server generates a new RSA key pair: " + "\n\n" + rsa.toString() + "\n");
+		
+		System.out.println("2. Server encrypts key pair with Client/Server-Key & Client/Server-IV and sends it to Client: "
+				+ "- See 'SERVER_ENCRYPT_TO_CLIENT.txt'" + "\n");
+		String encryptedMessage = encryptOrDecrypt(message, keyClientServer, ivClientServer, "Server_Encrypt_To_Client.txt", DES.processingMode.ENCRYPT);
+		System.out.println(encryptedMessage + "\n\n");		
+		
+		kerberos.pauseSimulation();
+		
+		client.receiveRSAKeys(encryptedMessage);
+	}
 }

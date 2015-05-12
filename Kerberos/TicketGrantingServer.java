@@ -4,11 +4,11 @@ import java.util.*;
 
 public class TicketGrantingServer 
 {
-	private String keyTGS = "MyAwesomeTripleDESKey"; //will be randomly generated
-	private String ivTGS = "IP0M1S55"; //will be randomly generated
+	private String keyTGS;
+	private String ivTGS;
 	
-	private String keyServerTGS = "123456789ABCDEFGHIJKL";	//will be randomly generated
-	private String ivServerTGS = "12345678"; //will be randomly generated
+	private String keyServerTGS;
+	private String ivServerTGS;
 	
 	private String blockCipherMode;
 	private KerberosSystem kerberos;
@@ -16,10 +16,15 @@ public class TicketGrantingServer
 	private LinkedList<String> timestamps = new LinkedList<String>();	//used for counter-attacking Replay Attack
 	
 	
-	public TicketGrantingServer(String blockCipherMode, KerberosSystem kerberos) 
+	public TicketGrantingServer(String blockCipherMode, KerberosSystem kerberos, 
+			String keyTGS, String ivTGS, String keyServerTGS, String ivServerTGS) 
 	{
 		this.kerberos = kerberos;
 		this.blockCipherMode = blockCipherMode;
+		this.keyTGS = keyTGS;
+		this.ivTGS = ivTGS;
+		this.keyServerTGS = keyServerTGS;
+		this.ivServerTGS = ivServerTGS;
 		System.out.println(toString());
 	}
 	
@@ -27,15 +32,15 @@ public class TicketGrantingServer
 	
 	public String toString()
 	{
-		String s = "Ticket Granting Server -------------------------------------------------------\n\n";
-		s +=       " - Specializes in receiving Tickets submitted by Clients, and validating them." + "\n";
-		s +=	   " - Creates session keys/IVs for Client/Server communication." + "\n\n";
-		s +=       " - Configured with a Symmetric Encryption Key and Initialization Vector." + "\n";
-		s +=	   "    > TGS-KEY:    " + keyTGS + "\n";
-		s +=       "    > TGS-IV:     " + ivTGS + "\n\n";
-		s +=	   " - Also configured with a Key and IV to use with the Resource Server." + "\n";
-		s +=	   "    > TGS/S-KEY: " + keyServerTGS + "\n";
-		s +=	   "    > TGS/S-IV:  " + ivServerTGS + "\n\n";
+		String s = "\n\n TICKET GRANTING SERVER ___________________________________________________________________________\n\n";
+		s +=       " - Receives Tickets submitted by Clients, and validates them using an expiration date." + "\n";
+		s +=	   " - Creates new session keys & IVs for Client/Server communication." + "\n\n";
+		s +=       " - Configured with the TGS Key and TGS IV." + "\n";
+		s +=	   "    > TGS-KEY:        " + keyTGS + "\n";
+		s +=       "    > TGS-IV:         " + ivTGS + "\n\n";
+		s +=	   " - Configured with the TGS-Server Key and TGS-Server IV (to use with the Resource Server)" + "\n";
+		s +=	   "    > TGS/Server-KEY: " + keyServerTGS + "\n";
+		s +=	   "    > TGS/Server-IV:  " + ivServerTGS + "\n\n";
 
 		return s;
 	}
@@ -59,7 +64,7 @@ public class TicketGrantingServer
 		output += 	    "Extracted Timestamp:    -------------------------------------------- \n" + " > " + encryptedTimestamp + "\n";
 		System.out.println(output + "\n\n");
 				
-		System.out.println("3. TGS decrypts Timestamp with its own TGS-key:" + "\n");
+		System.out.println("3. TGS decrypts Timestamp with its TGS-key ('" + keyTGS + "') & TGS-IV ('" + ivTGS + "') - See 'TGS_DECRYPT_FROM_CLIENT.txt' \n");
 		String decryptedTimestamp = encryptOrDecrypt(encryptedTimestamp, keyTGS, ivTGS, "TGS_Decrypt_From_Client.txt", DES.processingMode.DECRYPT);
 		System.out.println("Decrypted Timestamp:    -------------------------------------------- \n" + " > " + decryptedTimestamp + "\n");
 		
@@ -143,8 +148,8 @@ public class TicketGrantingServer
 		kerberos.printStepNine();
 		
 		//code here for constructing key and IV:
-		String clientServerKey = "newClientServerKey123";		//hard-coded for now
-		String clientServerIV =  "12345678";					//hard-coded for now
+		String clientServerKey = new KeyGenerator(21).getKey();
+		String clientServerIV =  new KeyGenerator(8).getKey();
 		
 		String plaintextKey = "[START_KEY]" + clientServerKey + "[END_KEY]";
 		plaintextKey +=		  "[START_IV]" + clientServerIV + "[END_IV]";
@@ -170,16 +175,20 @@ public class TicketGrantingServer
 	{
 		kerberos.printStepTen();
 		
-		System.out.println("1. TGS creates TWO copies of a message containing the key and IV: " + "\n");
+		System.out.println("1. TGS creates TWO copies of a message containing the Client/Server-Key and Client/Server-IV: " + "\n");
 		System.out.println("   > Message:  " + key + "\n\n");
 		
 		String encryptedKeyToServer = encryptOrDecrypt(key, keyServerTGS, ivServerTGS, "TGS_Encrypt_To_Server.txt", DES.processingMode.ENCRYPT);
 		String encryptedKeyToClient = encryptOrDecrypt(key, keyTGS, ivTGS, "TGS_Encrypt_To_Client.txt", DES.processingMode.ENCRYPT);
 		
-		System.out.println("2. TGS encrypts the 1st copy with the Server/TGS key, and sends it to Server: " + "\n");
+		System.out.println("2. TGS encrypts the 1st copy with the Server/TGS-Key & Server/TGS-IV, "
+				+ "and sends it to Server: - 'See 'TGS_ENCRYPT_TO_SERVER.txt'" + "\n");
+		
 		System.out.println("   > Message to Server:  " + encryptedKeyToServer + "\n\n");
 		
-		System.out.println("3. TGS encrypts the 2nd copy with the TGS key, and sends it to Client: " + "\n");
+		System.out.println("3. TGS encrypts the 2nd copy with the TGS-Key & TGS-IV, "
+				+ "and sends it to Client: - 'See 'TGS_ENCRYPT_TO_CLIENT.txt'" + "\n");
+		
 		System.out.println("   > Message to Client:  " + encryptedKeyToClient + "\n\n");
 
 		kerberos.pauseSimulation();

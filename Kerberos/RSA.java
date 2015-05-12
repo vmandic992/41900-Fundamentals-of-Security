@@ -40,4 +40,15 @@ public class RSA
 	{
 		return this.n;
 	}
+	
+	public String toString()
+	{
+		String s = "RSA_E_EXPONENT:" + "\n";
+		s +=       " > " + getE().toString() + "\n\n";
+		s +=	   "RSA_D_EXPONENT:" + "\n";
+		s +=	   " > " + getD().toString() + "\n\n";
+		s +=	   "RSA_N_MODULUS:" + "\n";
+		s +=	   " > " + getN().toString();
+		return s;
+	}
 }
