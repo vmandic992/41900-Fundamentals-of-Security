@@ -1,20 +1,22 @@
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 
 public class TicketGrantingServer 
 {
-	private String keyTGS;
-	private String ivTGS;
+	private String keyTGS;			//TGS key
+	private String ivTGS;			//TGS IV (for CBC)
 	
-	private String keyServerTGS;
-	private String ivServerTGS;
+	private String keyServerTGS;	//TGS-Server Key
+	private String ivServerTGS;		//TGS-Server IV (for CBC)
 	
-	private String blockCipherMode;
+	private String blockCipherMode;	//ECB or CBC
 	private KerberosSystem kerberos;
-	
-	private LinkedList<String> timestamps = new LinkedList<String>();	//used for counter-attacking Replay Attack
-	
+		
 	
 	public TicketGrantingServer(String blockCipherMode, KerberosSystem kerberos, 
 			String keyTGS, String ivTGS, String keyServerTGS, String ivServerTGS) 
@@ -47,9 +49,9 @@ public class TicketGrantingServer
 	
 	
 	
-	public void receiveRequest(String request) throws IOException
+	public void receiveRequest(String request) throws IOException, ParseException
 	{
-		kerberos.printStepEight();
+		kerberos.printStepEightA();
 		
 		System.out.println("1. Message received by TGS: " + "\n\n" + request + "\n\n");
 		
@@ -66,8 +68,8 @@ public class TicketGrantingServer
 				
 		System.out.println("3. TGS decrypts Timestamp with its TGS-key ('" + keyTGS + "') & TGS-IV ('" + ivTGS + "') - See 'TGS_DECRYPT_FROM_CLIENT.txt' \n");
 		String decryptedTimestamp = encryptOrDecrypt(encryptedTimestamp, keyTGS, ivTGS, "TGS_Decrypt_From_Client.txt", DES.processingMode.DECRYPT);
-		System.out.println("Decrypted Timestamp:    -------------------------------------------- \n" + " > " + decryptedTimestamp + "\n");
-		
+		System.out.println("Decrypted Timestamp:    -------------------------------------------- \n" + " > " + decryptedTimestamp + "\n\n");
+				
 		kerberos.pauseSimulation();
 		
 		validateRequestAndProceed(ticket, decryptedTimestamp, serverName);
@@ -96,50 +98,90 @@ public class TicketGrantingServer
 	
 	
 	
-	private void validateRequestAndProceed(String ticket, String timestamp, String serverName) throws IOException
+	private void validateRequestAndProceed(String ticket, String timestamp, String serverName) throws IOException, ParseException
 	{
+		kerberos.printStepEightB();
+		
+		boolean ticketExpired = validateTicketExpiration(ticket);
 		boolean timestampValid = validateTimestamp(timestamp);
-		boolean ticketExpired = validateTicket(ticket);
 		
 		if (timestampValid && ticketExpired)
 		{
+			kerberos.pauseSimulation();
 			generateSessionKey(serverName);
 		}
 		else if (!timestampValid)
 		{
-			kerberos.abortWithError("ERROR!!! Timestamp already exists, potential replay-attack detected.");
+			kerberos.abortWithError("ERROR!!! Timestamp too old, potential Replay Attack detected.");
 		}
 		else if (!ticketExpired)
 		{
-			kerberos.abortWithError("ERROR!!! Invalid ticket; passed expiration date");
+			kerberos.abortWithError("ERROR!!! Invalid ticket; passed expiration date.");
 		}
 		//generateSessionKey(serverName);
 	}
 	
 	
-	private boolean validateTimestamp(String timestamp)
+	private boolean validateTimestamp(String timestamp) throws ParseException
 	{
-		for (String s : timestamps)
-		{
-			if (s.equals(timestamp))
-				return false;
-		}
-		timestamps.add(timestamp);
-		return true;
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		
+		Date currentTimestamp = new Date();
+		Date receivedTimestamp = dateFormat.parse(timestamp);	
+		
+		long differenceBetweenTimestamps = compareTimestamps(currentTimestamp, receivedTimestamp);
+		boolean timestampValid = (differenceBetweenTimestamps < 1);
+		
+		String output = "2. TGS checks if timestamp is within 2 minutes of System Time: \n\n";
+		output +=	    "    > Received Timestamp:          " + dateFormat.format(receivedTimestamp) + "\n";
+		output +=		"    > Current Timestamp:           " + dateFormat.format(currentTimestamp) + "\n";
+		output +=		"    > Difference in Minutes:       " + differenceBetweenTimestamps + "\n";
+		output +=	    "    > Valid Timestamp?             " + timestampValid + "\n";
+		
+		System.out.println(output);
+
+		return timestampValid;
 	}
 	
 	
-	private boolean validateTicket(String ticket)
-	{
-		/*
-		 * CODE HERE FOR VALIDATING TICKET EXPIRATION DATE (basically a way we can use the ticket...)
-		 * 
+	private long compareTimestamps(Date currentTimestamp, Date receivedTimestamp) throws ParseException
+	{		
+		SimpleDateFormat f = new SimpleDateFormat("yyyy/mm/dd hh:mm:ss");
+		
+		String date1Formatted = f.format(currentTimestamp);
+		Date date1Truncated = f.parse(date1Formatted);
+		
+		String date2Formatted = f.format(receivedTimestamp);
+		Date date2Truncated = f.parse(date2Formatted);
+		
+		long timeDiff = Math.abs(date2Truncated.getTime() - date1Truncated.getTime());
+		
+		return TimeUnit.MILLISECONDS.toMinutes(timeDiff);
+
+	}
+	
+	
+	private boolean validateTicketExpiration(String ticket) throws ParseException
+	{		
 		int dateStart = ticket.indexOf("Expiration Date: ") + 17;
 		int dateEnd = ticket.indexOf("[/Date]");
-		String expirationDate = ticket.substring(dateStart, dateEnd);
+		String expirationDateInTicket = ticket.substring(dateStart, dateEnd);
 		
-		*/
-		return true;
+		SimpleDateFormat format = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		Date expiryDateFormatted = format.parse(expirationDateInTicket);
+				
+		Date currentDate = new Date();
+		
+		boolean ticketNotExpired = currentDate.before(expiryDateFormatted);
+		
+		String output = "1. TGS checks if Ticket has not expired: \n\n";
+		output +=	    "    > Ticket Expiration Time:      " + format.format(expiryDateFormatted) + "\n";
+		output +=       "    > Current Time:                " + format.format(currentDate) + "\n";
+		output +=       "    > Current Date < Expiry Date?  " + ticketNotExpired + "\n";
+		
+		System.out.println(output + "\n");
+		
+		return ticketNotExpired;
 	}
 	
 	

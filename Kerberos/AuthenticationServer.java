@@ -1,18 +1,24 @@
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.io.IOException;
 
 public class AuthenticationServer 
 {
-	private String keyTGS;
-	private String ivTGS;
+	private String keyTGS;		//TGS key
+	private String ivTGS;		//TGS IV
 		
-	private String blockCipherMode;
+	private String blockCipherMode;		//CBC or ECB
 	private KerberosSystem kerberos;
 
+	//Used to store the 4 hard-coded user accounts
 	LinkedList<Login> database = new LinkedList<Login>();
 	
 	
+	/*	- Constructor takes the block-cipher mode (CBC or ECB)
+	 *  - Constructor also takes a reference to the Kerberos object
+	 *  - Finally, it takes the TGS KEY and TGS IV
+	 */
 	public AuthenticationServer(String blockCipherMode, KerberosSystem kerberos, String keyTGS, String ivTGS) 
 	{
 		this.kerberos = kerberos;
@@ -38,7 +44,9 @@ public class AuthenticationServer
 	}
 	
 	
-	
+	/*	- Creates 4 users (group members)
+	 *  - Each user has a username and password
+	 */
 	private void createDatabase()
 	{
 		database.add(new Login("Andrew Scott" , "Scotty_22_from_BOX-HQ"));
@@ -60,7 +68,11 @@ public class AuthenticationServer
 	}
 	
 	
-	
+	/*	- Takes a username
+	 *  - Looks up the username from the list of Logins
+	 *  - Returns the correspongind password of the username
+	 * 
+	 */
 	private String findPassword(String username)
 	{
 		for (Login login : database)
@@ -70,8 +82,12 @@ public class AuthenticationServer
 	}
 	
 	
-	
-	public void receiveRequest(String request, Client client) throws IOException
+	/*	- AS receives the client's request, and a reference to the Client object
+	 *  - AS extracts the username from the message
+	 *  - AS uses the username to look up the client and find the correct password
+	 *  - The username, password and client are passed into 'respondToClient()'
+	 */
+	public void receiveRequest(String request, Client client) throws IOException, ParseException
 	{
 		kerberos.printStepThree();
 		
@@ -89,6 +105,9 @@ public class AuthenticationServer
 	}
 	
 	
+	/*	- Takes a string and searches for the part containing the username
+	 *  - It does this by finding the string "USERNAME: " and collecting the characters following this
+	 */
 	private String extractClientUsername(String request)
 	{
 		int start = request.indexOf("USERNAME: ") + 10;
@@ -97,7 +116,10 @@ public class AuthenticationServer
 	}
 	
 	
-	private void respondToClient(String clientUsername, String clientPassword, Client client) throws IOException
+	/*	- The AS uses 'generateResponse()' to make a message for the client
+	 *  - The returned message is sent to the Client
+	 */
+	private void respondToClient(String clientUsername, String clientPassword, Client client) throws IOException, ParseException
 	{
 		kerberos.printStepFour();
 		
@@ -112,7 +134,16 @@ public class AuthenticationServer
 	}
 	
 	
-	
+	/*	- This method creates a message to send back to the client
+	 *  - An Expiration Date for a new Ticket is generated using 'getTicketExpiryDate()'
+	 *  - A new Ticket is created, which receives the client's username and expiration date
+	 *  
+	 *  - The message contains:
+	 *  	1. The ticket details
+	 *  	2. TGS Key and TGS IV (using tags to separate each part) 
+	 *  
+	 *  - The message is encrypted using 'encryptMessageToClient()'
+	 */
 	private String generateResponse(String clientUsername, String clientPassword) throws IOException
 	{
 		String expiration = getTicketExpiryDate();;
@@ -129,18 +160,30 @@ public class AuthenticationServer
 	}
 	
 	
+	/*	- To create an expiration date (for the ticket) we first make a Calendar object called 'cal'
+	 * 	- We then ADD 1 hour to it (meaning, expiration is 1 HOUR from now)
+	 * 	- We get the current date of our Calendar object using 'cal.getTime()'
+	 *  - We convert the date into a "yyyy/mm/dd hh:mm:ss" format (human-readable)
+	 *  - We return this date
+	 *  
+	 *  - E.g. if our current date is 5/15/2015 3:15:20, 
+	 *  	   then the expiration date will be 5/15/2015 4:15:20 (1 hour ahead)
+	 */
 	private String getTicketExpiryDate()
 	{
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 		Calendar cal = Calendar.getInstance();
-		cal.add(Calendar.HOUR_OF_DAY, 2);					//current time + 2 hours = expiration
+		cal.add(Calendar.HOUR_OF_DAY, 1);					//current time + 1 hour = expiration
 		String date = dateFormat.format(cal.getTime());
 
 		return date;
 	}
 	
 	
-	
+	/*	- To create a ticket we make a new Ticket object
+	 * 	- The ticket receives the client's username, ticket expiration date and a small note (for extra detail's sake)
+	 * 
+	 */
 	private Ticket createTicket(String clientUsername, String expirationDate)
 	{
 		String ticketNote = "NOTE: Present this ticket to TGS.";
@@ -148,7 +191,19 @@ public class AuthenticationServer
 	}
 	
 	
-	
+	/*	- To encrypt a message to the client:
+	 * 
+	 * 		1. Make a new TripleDES object
+	 * 			- Pass in the key
+	 * 			- Pass in 'null' for the IV (because CBC will never be used between AS and Client)
+	 * 			- Pass in the text file used for capturing the encryption's operations
+	 * 
+	 * 		2. Then call the processData() method of TripleDES, passing in:
+	 * 			- The message to encrypt
+	 * 			- The block-cipher mode (ECB)
+	 * 			- The processing mode (encrypt)
+	 * 
+	 */
 	private String encryptMessageToClient(String m, String key) throws IOException
 	{		
 		//No IV will be used between the AS and Client, only ECB can be used for this transmission

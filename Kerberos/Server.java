@@ -119,7 +119,7 @@ public class Server
 		RSA rsa = new RSA();
 		String message = rsa.toString();
 		
-		System.out.println("1. Server generates a new RSA key pair: " + "\n\n" + rsa.toString() + "\n");
+		System.out.println("1. Server generates a new RSA key pair: " + "\n\n" + rsa.toString() + "\n\n");
 		
 		System.out.println("2. Server encrypts key pair with Client/Server-Key & Client/Server-IV and sends it to Client: "
 				+ "- See 'SERVER_ENCRYPT_TO_CLIENT.txt'" + "\n");

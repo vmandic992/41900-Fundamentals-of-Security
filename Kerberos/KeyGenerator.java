@@ -7,7 +7,7 @@ public class KeyGenerator
 	
 	public KeyGenerator(int length)
 	{
-		char[] chars = "abcdefghijklmnopqrstuvwxyz1234567890".toCharArray();
+		char[] chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890".toCharArray();
 		//r = new Random();
 		
 		while(key.length() < length)

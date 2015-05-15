@@ -1,4 +1,5 @@
 
-public class Hash {
-
+public class Hash 
+{
+	//class not used
 }

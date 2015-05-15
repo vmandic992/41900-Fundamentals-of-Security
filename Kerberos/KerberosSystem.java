@@ -1,5 +1,8 @@
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.*;
+
+import javax.jws.WebParam.Mode;
 
 public class KerberosSystem 
 {
@@ -10,6 +13,8 @@ public class KerberosSystem
 	public TicketGrantingServer TGS;
 	public LinkedList<Server> servers = new LinkedList<Server>(); //will only hold 1 server (RSA key generator)
 	public Client client;										  //used to hold the simulated client
+	public Hacker hacker;
+	public boolean simulateAttack = false;
 	
 	//Holds the chosen block-cipher mode (ECB or CBC)
 	private String blockCipherMode;
@@ -19,13 +24,15 @@ public class KerberosSystem
 	public boolean serverHasKey = false;
 	
 	
-	public KerberosSystem() throws IOException 
+	public KerberosSystem() throws IOException, ParseException 
 	{
 		showWelcomeText();				//introduce program
 		displayCaptureFiles();			//display the text file names which will capture encryption/decryption output
 		
 		pauseSimulation();				//STOP, let the user read
 		setBlockCipherMode();			//prompt the user to enter ECB or CBC for block-cipher mode
+		
+		setSimulationMode();			//ask if the user wants to see the simulation with an attack
 		
 		createServersAndClient();		//create entities
 		startKerberos();				//everything's setup, now start Kerberos
@@ -86,6 +93,19 @@ public class KerberosSystem
 		return mode.toUpperCase();
 	}
 	
+	//Prompts the user to enter 'yes' or 'no' for showing the MITM attack
+	private void setSimulationMode()
+	{
+		System.out.print("\n\nShow MITM attack during simulation? ");
+		String input = scanner.nextLine();
+		while (!(input.equalsIgnoreCase("YES") || input.equalsIgnoreCase("NO")))
+		{
+			System.out.print("\n INVALID input, enter 'Yes' or 'No': ");
+			input = scanner.nextLine();
+		}
+		simulateAttack = input.equalsIgnoreCase("Yes");
+	}
+	
 	private void createServersAndClient()
 	{
 		printStepOne();
@@ -107,11 +127,11 @@ public class KerberosSystem
 		servers.add(new Server("RSA-KeyGen-Server", "512-bit RSA key-pair generator", blockCipherMode, this, keyServerTGS, ivServerTGS));
 		pauseSimulation();
 
-		//Choose which client to use (hard-coded for now)
-		//client = new Client("Andrew Scott" , "Scotty_22_from_BOX-HQ", blockCipherMode, this);
 		client = new Client("Vedran Mandic", "xx_MiamiHotlinePro_xx", blockCipherMode, this);	
-		//client = new Client("Jeremiah Cruz", "MyLaptopBatteryIsShit", blockCipherMode, this);	
-		//client = new Client("Jason D'Souza", "UTS_IT_SUPPORT_BEAST!", blockCipherMode, this);
+		
+		if (simulateAttack)
+			hacker = new Hacker("Bob Hack", this);
+		
 		pauseSimulation();	
 	}
 	
@@ -121,7 +141,7 @@ public class KerberosSystem
 		scanner.nextLine();
 	}
 	
-	private void startKerberos() throws IOException
+	private void startKerberos() throws IOException, ParseException
 	{
 		printStepTwo();
 		client.sendRequestToAS();
@@ -140,7 +160,7 @@ public class KerberosSystem
 	
 	public void abortWithError(String error)
 	{
-		System.out.println("ALERT > KERBEROS ABORTED \n" + error);
+		System.out.println("\n :ALERT > KERBEROS ABORTED \n\n" + error);
 	}
 	
 	private void printStepOne()
@@ -199,11 +219,19 @@ public class KerberosSystem
 		System.out.println(s);
 	}
 	
-	public void printStepEight()
+	public void printStepEightA()
 	{
 		String s = "\n===============================================================================================";
-		s += 	   "\n>>> STEP 8: TGS RECEIVES MESSAGE, DECRYPTS TIMESTAMP AND VALIDATES THE INFORMATION <<<";
+		s += 	   "\n>>> STEP 8(A): TGS RECEIVES MESSAGE AND DECRYPTS TIMESTAMP <<<";
 		s +=       "\n===============================================================================================\n";
+		System.out.println(s);
+	}
+	
+	public void printStepEightB()
+	{
+		String s = "\n==================================================================================================";
+		s += 	   "\n>>> STEP 8(B): TGS CHECKS IF TICKET HAS NOT EXPIRED, AND ALSO VALIDATES THE CLIENT'S TIMESTAMP <<<";
+		s +=       "\n==================================================================================================\n";
 		System.out.println(s);
 	}
 	
