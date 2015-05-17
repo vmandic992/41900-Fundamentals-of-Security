@@ -14,11 +14,11 @@ public class TripleDES
 	
 	private String newLine = System.getProperty("line.separator");
 	
-	/*	- Constructor takes a key, IV and capture file
-	 * 	- Makes a file object pointing to the capture file via its file-path
+	/*	- Constructor takes a 168-bit key, 64-bit IV and capture file (text file name)
+	 * 	- Makes a file object pointing to the capture file using the passed-in text file name
 	 *  - Makes a writer which will be used to write data to the file
-	 *  - Splits the 168-bitkey into 3 56-bit DES keys
-	 *  - Sets the IV
+	 *  - Splits the 168-bitkey into 3 x 56-bit DES keys
+	 *  - Sets the IV of the TripleDES object
 	 */
 	public TripleDES(String key, String IV, String captureFilePath) throws IOException
 	{
@@ -47,9 +47,9 @@ public class TripleDES
 			
 	}
 	
+	
 	/*	- Takes data to write to the file
 	 *  - Writes the data to the file
-	 * 
 	 */
 	private void writeToCapture(String data) throws IOException
 	{
@@ -57,21 +57,22 @@ public class TripleDES
 			writer.write(data);
 	}
 	
-	/*	- Splits the 168-bit (21 character) key into 3 56-bit (7-character) DES keys
-	 * 
+	
+	/*	- Splits the 168-bit (21 character) key into 3 x 56-bit (7-character) DES keys 
 	 */
 	private void splitKey(String mainKey)
 	{
-		//MainKey may require padding if it's less than 21 characters
-		key1 = mainKey.substring(0, 7);			//1st 7 characters = key 1
-		key2 = mainKey.substring(7, 14);		//2nd 7 characters = key 2
-		key3 = mainKey.substring(14, 21);		//3rd 7 characters = key 3
+		key1 = mainKey.substring(0, 7);			//1st 7 characters = key 1 (56-bits)
+		key2 = mainKey.substring(7, 14);		//2nd 7 characters = key 2 (56-bits)
+		key3 = mainKey.substring(14, 21);		//3rd 7 characters = key 3 (56-bits)
 	}
 	
-	/*	- The method which encrypts or decrypts data
+	
+	
+	/*	- This method encrypts or decrypts data
+	 * 
 	 * 	- The method receives the data to encrypt/decrypt, as well as the cipher-mode (CBC or ECB), and
 	 *    the processing mode (encrypt or decrypt)
-	 * 
 	 */
 	public String processData(String data, DES.blockCipherMode cipherMode, DES.processingMode mode) throws IOException
 	{
@@ -91,12 +92,12 @@ public class TripleDES
 	
 	
 	/*	- Executes DES 3 times for ENCRYPTION
-	 *  	1. Executes 1st DES in encryption mode (passing in key 1)
-	 *  	2. Executes 2nd DES in decryption mode (passing in key 2)
-	 *  	3. Executes 3rd DES in encryption mode (passing in key 3)
+	 *  	1. Executes 1st DES in ENcryption mode (with key 1)
+	 *  	2. Executes 2nd DES in DEcryption mode (with key 2)
+	 *  	3. Executes 3rd DES in ENcryption mode (with key 3)
 	 *  
-	 *  - Each DES object is passed the same writer, because we want each DES to write to the same capture file, so then
-	 *    the capture file shows the operations of all 3 DES executions sequentially
+	 *  - Each DES object is passed the same writer, because we want each DES (OF THIS TRIPLE-DES OBJECT) 
+	 *    to write to the same capture file, so then the capture file shows the operations of all 3 DES executions sequentially
 	 * 
 	 */
 	private String encrypt(String data, DES.blockCipherMode cipherMode) throws IOException
@@ -127,15 +128,15 @@ public class TripleDES
 	
 	
 	/*	- Executes DES 3 times for DECRYPTION
-	 *  	1. Executes 1st DES in decryption mode (passing in key 3)
-	 *  	2. Executes 2nd DES in encryption mode (passing in key 2)
-	 *  	3. Executes 3rd DES in decryption mode (passing in key 1)
+	 *  	1. Executes 1st DES in DEcryption mode (with key 3)
+	 *  	2. Executes 2nd DES in ENcryption mode (with key 2)
+	 *  	3. Executes 3rd DES in DEcryption mode (with key 1)
 	 *  
-	 *  - Each DES object is passed the same writer, because we want each DES to write to the same capture file, so then
-	 *    the capture file shows the operations of all 3 DES executions sequentially
+	 *  - Each DES object is passed the same writer, because we want each DES (OF THIS TRIPLE-DES OBJECT) 
+	 *    to write to the same capture file, so then the capture file shows the operations of all 3 DES executions sequentially
 	 *    
 	 *  - IMPORTANT:
-	 *  	> When we encrypt plaintext from the method above 'encrypt()', we might add spaces for padding
+	 *  	> When we encrypt plaintext from the method above 'encrypt()', we might add spaces for padding purposes
 	 *  	> When we decrypt and obtain the initial plaintext, we want to remove the trailing spaces
 	 *  	> This is what 'trim()' is used for at the end
 	 * 
@@ -159,12 +160,12 @@ public class TripleDES
 		writeToCapture("STAGE 3: DES [DECRYPT] ==================================================================================================" + newLine);
 		writeToCapture("=========================================================================================================================" + newLine + newLine);
 		
-		//include code to trim off spaces at the end
 		String result3 = new DES(key1, writer).processData(result2, cipherMode, IV, DES.processingMode.DECRYPT);
 		
 		if (writer != null)
 			writer.close();		//Close the writer, we're done writing to the file
-		return result3.trim();
+		
+		return result3.trim();	//Return the final decrypted plaintext, but remove trailing spaces (the padding)
 	}
 }
 

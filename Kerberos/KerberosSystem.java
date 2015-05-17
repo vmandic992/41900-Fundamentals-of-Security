@@ -14,7 +14,7 @@ public class KerberosSystem
 	public LinkedList<Server> servers = new LinkedList<Server>(); //will only hold 1 server (RSA key generator)
 	public Client client;										  //used to hold the simulated client
 	public Hacker hacker;
-	public boolean simulateAttack = false;
+	public boolean includeAttackInSimulation = false;
 	
 	//Holds the chosen block-cipher mode (ECB or CBC)
 	private String blockCipherMode;
@@ -62,8 +62,10 @@ public class KerberosSystem
 		s +=	   " 8.  'Server_Decrypt_From_TGS'     ---   When Server decrypts Client/Server Session Key \n";
 		s +=       " 9.  'Client_Encrypt_To_Server'    ---   When Client encrypts RSA key-pair request \n";
 		s +=	   " 10. 'Server_Decrypt_From_Client'  ---   When Server decrypts RSA key-pair request \n";
-		s +=       " 11. 'Server_Encrypt_To_Client'    ---   When Server encrypts RSA key-pair \n";
-		s +=       " 12. 'Client_Decrypt_From Server'  ---   When Client decrypts RSA key-pair \n\n";
+		s +=       " 11. 'Server_Encrypt_To_Client'    ---   When Server encrypts RSA key-pair response \n";
+		s +=       " 12. 'Client_Decrypt_From Server'  ---   When Client decrypts RSA key-pair response \n";
+		s +=       " 13. 'TGS_Encrypt_To_Hacker'       ---   When TGS encrypts random session key \n\n";
+
 		System.out.println(s);
 	}
 	
@@ -103,7 +105,7 @@ public class KerberosSystem
 			System.out.print("\n INVALID input, enter 'Yes' or 'No': ");
 			input = scanner.nextLine();
 		}
-		simulateAttack = input.equalsIgnoreCase("Yes");
+		includeAttackInSimulation = input.equalsIgnoreCase("Yes");
 	}
 	
 	private void createServersAndClient()
@@ -118,21 +120,28 @@ public class KerberosSystem
 		String keyServerTGS = new KeyGenerator(21).getKey();
 		String ivServerTGS = new KeyGenerator(8).getKey();
 		
+		//Make the AS, passing in the block-cipher mode, this kerberos object, TGS key and TGS IV
 		AS = new AuthenticationServer(blockCipherMode, this, keyTGS, ivTGS);
 		pauseSimulation();
 		
+		//Make the TGS, passing in the block-cipher mode, this kerberos object, TGS key, TGS IV, TGS/Server key and TGS/Server IV
 		TGS = new TicketGrantingServer(blockCipherMode, this, keyTGS, ivTGS, keyServerTGS, ivServerTGS);
 		pauseSimulation();
 
+		//Make the Server, passing in the block-cipher mode, this kerberos object, TGS/Server key and TGS/Server IV
 		servers.add(new Server("RSA-KeyGen-Server", "512-bit RSA key-pair generator", blockCipherMode, this, keyServerTGS, ivServerTGS));
 		pauseSimulation();
 
+		//Make a Client, passing in the block-cipher mode, this Kerberos object, the username and password
 		client = new Client("Vedran Mandic", "xx_MiamiHotlinePro_xx", blockCipherMode, this);	
-		
-		if (simulateAttack)
-			hacker = new Hacker("Bob Hack", this);
-		
 		pauseSimulation();	
+		
+		//If we'e including a man-in-the-middle attack, make a Hacker, passing in a name and this Kerberos object
+		if (includeAttackInSimulation)
+		{
+			hacker = new Hacker("Bob Hack", this);
+			pauseSimulation();	
+		}
 	}
 	
 	public void pauseSimulation()
@@ -141,11 +150,17 @@ public class KerberosSystem
 		scanner.nextLine();
 	}
 	
+	
+	/*	- This method starts Kerberos by instructing the Client to send a request to the AS
+	 */
 	private void startKerberos() throws IOException, ParseException
 	{
 		printStepTwo();
 		client.sendRequestToAS();
 		
+		/* - Once the Client and Server have received a shared session key, instruct the Client to
+		 *   send a request to the Server
+		 */
 		if (sessionIsEstablished())
 		{
 			printStepTwelve();
@@ -163,11 +178,25 @@ public class KerberosSystem
 		System.out.println("\n :ALERT > KERBEROS ABORTED \n\n" + error);
 	}
 	
+	
+	/*	- Once the normal Kerberos flow is over, show the man-in-the-middle attack (replay attack)
+	 */
+	public void endSimulation() throws IOException, ParseException
+	{
+		printEnd();		
+		
+		if (includeAttackInSimulation)
+		{
+			pauseSimulation();
+			hacker.doReplayAttack();
+		}
+	}
+	
 	private void printStepOne()
 	{
-		String s = "\n===============================================================================================";
-		s += 	   "\n>>> STEP 1: CREATE THE 4 ENTITIES: (1) AS, (2) TGS, (3) SERVER, & (4) CLIENT <<<";
-		s +=       "\n===============================================================================================\n";
+		String s = "\n=======================================================================================================";
+		s += 	   "\n>>> STEP 1: CREATE THE 4 ENTITIES: (1) AS, (2) TGS, (3) SERVER, (4) CLIENT, & (5) HACKER [optional] <<<";
+		s +=       "\n=======================================================================================================\n";
 		System.out.println(s);
 	}
 	
@@ -222,7 +251,7 @@ public class KerberosSystem
 	public void printStepEightA()
 	{
 		String s = "\n===============================================================================================";
-		s += 	   "\n>>> STEP 8(A): TGS RECEIVES MESSAGE AND DECRYPTS TIMESTAMP <<<";
+		s += 	   "\n>>> STEP 8(A): TGS RECEIVES MESSAGE, EXTRACTS THE ELEMENTS, AND DECRYPTS TIMESTAMP <<<";
 		s +=       "\n===============================================================================================\n";
 		System.out.println(s);
 	}
@@ -230,7 +259,7 @@ public class KerberosSystem
 	public void printStepEightB()
 	{
 		String s = "\n==================================================================================================";
-		s += 	   "\n>>> STEP 8(B): TGS CHECKS IF TICKET HAS NOT EXPIRED, AND ALSO VALIDATES THE CLIENT'S TIMESTAMP <<<";
+		s += 	   "\n>>> STEP 8(B): TGS CHECKS IF TICKET HAS NOT EXPIRED, AND ALSO VALIDATES THE INCLUDED TIMESTAMP <<<";
 		s +=       "\n==================================================================================================\n";
 		System.out.println(s);
 	}
@@ -286,7 +315,15 @@ public class KerberosSystem
 	public void printEnd()
 	{
 		String s = "\n===============================================================================================";
-		s += 	   "\n>>> END OF KERBEROS SIMULATION <<<";
+		s += 	   "\n>>> END OF KERBEROS SIMULATION - CLIENT AND SERVER CAN NOW COMMUNICATE SECURELY <<<";
+		s +=       "\n===============================================================================================\n";
+		System.out.println(s);
+	}
+	
+	public void printAttack()
+	{
+		String s = "\n===============================================================================================";
+		s += 	   "\n>>> MAN-IN-THE-MIDDLE-ATTACK - HACKER WILL ATTEMPT TO EXECUTE A REPLAY ATTACK <<<";
 		s +=       "\n===============================================================================================\n";
 		System.out.println(s);
 	}

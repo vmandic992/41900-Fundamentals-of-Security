@@ -171,7 +171,7 @@ public class DES
 		String shiftedKey = key;											//Get the main 56-bit key
 		for (int i = 0; i < numberOfRounds; i++)							//Execute 16 times (we need 1 key per round (16))
 		{
-			shiftedKey = performShift(shiftedKey, 1, shiftDirection.LEFT);	//Get 56-bit key, shift it left by 1
+			shiftedKey = performShift(shiftedKey, 4, shiftDirection.LEFT);	//Get 56-bit key, shift it left by 1
 			shiftedKey = performInversion(shiftedKey);						//Then invert the digits (i.e. 0 > 1 and 1 > 0)
 			generatedKeys.add(shiftedKey);									//Add this new 56-bit key to the list of subkeys
 																			//Then use THIS key to create the next one, and so on...

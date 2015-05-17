@@ -5,8 +5,8 @@ import java.io.IOException;
 
 public class AuthenticationServer 
 {
-	private String keyTGS;		//TGS key
-	private String ivTGS;		//TGS IV
+	private String keyTGS;				//TGS key
+	private String ivTGS;				//TGS IV
 		
 	private String blockCipherMode;		//CBC or ECB
 	private KerberosSystem kerberos;
@@ -15,7 +15,12 @@ public class AuthenticationServer
 	LinkedList<Login> database = new LinkedList<Login>();
 	
 	
-	/*	- Constructor takes the block-cipher mode (CBC or ECB)
+	
+	
+	/*	- Constructor takes the block-cipher mode (CBC or ECB)	~ However, ECB will always be used between AS and Client
+	 * 	  														  because there is no shared IV between the AS and Client, only
+	 * 															  the Client's password
+	 * 
 	 *  - Constructor also takes a reference to the Kerberos object
 	 *  - Finally, it takes the TGS KEY and TGS IV
 	 */
@@ -71,7 +76,6 @@ public class AuthenticationServer
 	/*	- Takes a username
 	 *  - Looks up the username from the list of Logins
 	 *  - Returns the correspongind password of the username
-	 * 
 	 */
 	private String findPassword(String username)
 	{
@@ -83,8 +87,8 @@ public class AuthenticationServer
 	
 	
 	/*	- AS receives the client's request, and a reference to the Client object
-	 *  - AS extracts the username from the message
-	 *  - AS uses the username to look up the client and find the correct password
+	 *  - AS then extracts the username from the message
+	 *  - AS then uses the username to look up the client and find the correct password
 	 *  - The username, password and client are passed into 'respondToClient()'
 	 */
 	public void receiveRequest(String request, Client client) throws IOException, ParseException
@@ -105,7 +109,7 @@ public class AuthenticationServer
 	}
 	
 	
-	/*	- Takes a string and searches for the part containing the username
+	/*	- Takes a string (the Client's request) and searches for the part containing the username
 	 *  - It does this by finding the string "USERNAME: " and collecting the characters following this
 	 */
 	private String extractClientUsername(String request)
@@ -182,7 +186,6 @@ public class AuthenticationServer
 	
 	/*	- To create a ticket we make a new Ticket object
 	 * 	- The ticket receives the client's username, ticket expiration date and a small note (for extra detail's sake)
-	 * 
 	 */
 	private Ticket createTicket(String clientUsername, String expirationDate)
 	{

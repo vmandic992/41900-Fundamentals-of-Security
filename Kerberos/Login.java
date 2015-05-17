@@ -11,7 +11,6 @@ public class Login
 	
 	/*	- Receives a username
 	 *  - Returns TRUE if username matches this login's username
-	 * 
 	 */
 	public boolean matches(String username)
 	{

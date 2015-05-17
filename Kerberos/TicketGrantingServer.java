@@ -8,16 +8,18 @@ import java.util.concurrent.TimeUnit;
 
 public class TicketGrantingServer 
 {
-	private String keyTGS;			//TGS key
-	private String ivTGS;			//TGS IV (for CBC)
+	private String keyTGS;				//TGS key
+	private String ivTGS;				//TGS IV (for CBC)
 	
-	private String keyServerTGS;	//TGS-Server Key
-	private String ivServerTGS;		//TGS-Server IV (for CBC)
+	private String keyServerTGS;		//TGS-Server Key
+	private String ivServerTGS;			//TGS-Server IV (for CBC)
 	
-	private String blockCipherMode;	//ECB or CBC
-	private KerberosSystem kerberos;
+	private String blockCipherMode;		//Block-cipher mode (ECB or CBC)
+	private KerberosSystem kerberos; 	//Reference to main KerberosSystem object
 		
 	
+	/*	- Receives block cipher mode, KerberosSystem object, TGS key, TGS IV, TGS-Server key, and TGS-Server IV
+	 */
 	public TicketGrantingServer(String blockCipherMode, KerberosSystem kerberos, 
 			String keyTGS, String ivTGS, String keyServerTGS, String ivServerTGS) 
 	{
@@ -36,6 +38,7 @@ public class TicketGrantingServer
 	{
 		String s = "\n\n TICKET GRANTING SERVER ___________________________________________________________________________\n\n";
 		s +=       " - Receives Tickets submitted by Clients, and validates them using an expiration date." + "\n";
+		s +=	   " - Detects Replay Attacks by validating Timestamps of their freshness (1 minute).\n";
 		s +=	   " - Creates new session keys & IVs for Client/Server communication." + "\n\n";
 		s +=       " - Configured with the TGS Key and TGS IV." + "\n";
 		s +=	   "    > TGS-KEY:        " + keyTGS + "\n";
@@ -48,7 +51,12 @@ public class TicketGrantingServer
 	}
 	
 	
-	
+	/*	- TGS receives the Client's request
+	 *  - It extracts the Ticket, Server Name, and Timestamp from the request (using method 'extractBetweenTags()')
+	 *  - It then decrypts the Timestamp using the TGS Key
+	 *  
+	 *  - Using these extracted components, it validates the Client's request using method 'validateRequestAndProceed()'
+	 */
 	public void receiveRequest(String request) throws IOException, ParseException
 	{
 		kerberos.printStepEightA();
@@ -67,7 +75,9 @@ public class TicketGrantingServer
 		System.out.println(output + "\n\n");
 				
 		System.out.println("3. TGS decrypts Timestamp with its TGS-key ('" + keyTGS + "') & TGS-IV ('" + ivTGS + "') - See 'TGS_DECRYPT_FROM_CLIENT.txt' \n");
+		
 		String decryptedTimestamp = encryptOrDecrypt(encryptedTimestamp, keyTGS, ivTGS, "TGS_Decrypt_From_Client.txt", DES.processingMode.DECRYPT);
+		
 		System.out.println("Decrypted Timestamp:    -------------------------------------------- \n" + " > " + decryptedTimestamp + "\n\n");
 				
 		kerberos.pauseSimulation();
@@ -75,8 +85,53 @@ public class TicketGrantingServer
 		validateRequestAndProceed(ticket, decryptedTimestamp, serverName);
 	}
 	
+
+	public void receiveReplayedRequest(String request, Hacker hacker) throws IOException, ParseException
+	{
+		String encryptedTimestamp = extractBetweenTags(request, "[START_TIMESTAMP]", "[END_TIMESTAMP]");
+		String decryptedTimestamp = encryptOrDecrypt(encryptedTimestamp, keyTGS, ivTGS, "TGS_Decrypt_From_Client.txt", DES.processingMode.DECRYPT);
+		
+		System.out.println("\n > Just like before (Step 8), the TGS will validate the received Timestamp.\n");
+		
+		boolean timestampValid = validateTimestamp(decryptedTimestamp);
+		
+		if (!timestampValid)
+			kerberos.abortWithError("ERROR!!! Timestamp too old, potential Replay Attack detected.");
+		else
+		{
+			kerberos.pauseSimulation();
+			hacker.receiveSessionKey(generateKeyForHacker());
+		}
+	}
 	
 	
+	private String generateKeyForHacker() throws IOException
+	{
+		String key = "[START_KEY]" + (new KeyGenerator(21).getKey()) + "[END_KEY]";
+		key +=		 "[START_IV]" + (new KeyGenerator(8).getKey()) + "[END_IV]";
+		
+		String encryptedKeyToHacker = encryptOrDecrypt(key, keyTGS, ivTGS, "TGS_Encrypt_To_Hacker.txt", DES.processingMode.ENCRYPT);
+	   
+		String s = "\n > Uh-Oh!... The hacker was quick enough to beat the Timestamp validation test! \n\n";
+		s +=       " > The TGS generates a session key for the Hacker and encrypts it with the TGS-Key - See 'TGS_ENCRYPT_TO_HACKER.txt'. \n\n";
+		System.out.println(s);
+		
+		kerberos.pauseSimulation();
+		
+		return encryptedKeyToHacker;
+	}
+	
+	
+	
+	/*	- Method takes a message and 2 tags (delimiters)
+	 *  - The string-data BETWEEN these 2 tags is returned
+	 *  
+	 *  - E.g.
+	 *  	> m 	   = [START]Hello[END]
+	 *  	> startTag = [START]
+	 *  	> endTag   = [END]
+	 *  	> RETURN   = Hello
+	 */
 	private String extractBetweenTags(String m, String startTag, String endTag)
 	{
 		int startKeyIndex = m.indexOf(startTag) + startTag.length();
@@ -87,7 +142,18 @@ public class TicketGrantingServer
 	}
 	
 	
-	
+	/*	- Method receives:
+	 * 		1. Data
+	 * 	    2. 168-bit 3DES Key
+	 *      3. 64-bit IV
+	 *      4. Capture file name
+	 *      5. Mode (encrypt or decrypt)
+	 *      
+	 *  - Make a new TripleDES object and call 'processData()' to encrypt or decrypt the data
+	 * 
+	 *  - If the 'blockCipherMode' is CBC, then use CBC, otherwise use ECB
+	 * 
+	 */
 	public String encryptOrDecrypt(String data, String key, String IV, String captureFilePath, DES.processingMode mode) throws IOException
 	{
 		if (blockCipherMode.equals("CBC"))
@@ -98,6 +164,17 @@ public class TicketGrantingServer
 	
 	
 	
+	/*	- Method receives the Client's Ticket, Timestamp and Server Name
+	 * 
+	 * 	- To validate the request we need to:
+	 * 		1. Make sure the Ticket hasn't expired in time
+	 * 		2. Make sure the Timetstamp is valid (to detect a replay attack)
+	 * 
+	 *  - If both conditions are valid, then proceed to making a new session key for the Client
+	 *  
+	 *  - Otherwise, abort the program with the appropriate error
+	 * 
+	 */
 	private void validateRequestAndProceed(String ticket, String timestamp, String serverName) throws IOException, ParseException
 	{
 		kerberos.printStepEightB();
@@ -118,10 +195,21 @@ public class TicketGrantingServer
 		{
 			kerberos.abortWithError("ERROR!!! Invalid ticket; passed expiration date.");
 		}
-		//generateSessionKey(serverName);
 	}
 	
 	
+	
+	/* 	- Method receives the Timestamp and validates it
+	 * 
+	 *	- The timestamp is validated by:
+	 * 		1. Making a new Java 'Date' object to get the current system time
+	 * 		2. Converting the received Timestamp string into a 'Date' object (using parsing)
+	 * 		3. Gets the difference between the 2 dates using the 'compareTimestamps()' method
+	 * 		4. If the difference is < 1, then return true, otherwise return false
+	 * 
+	 * 	- NOTE: If the difference > 1, then this could indicate an old timestamp is being replayed by a hacker.
+	 * -		If the difference < 1, then we say the timestamp is very recent and still fresh
+	 */
 	private boolean validateTimestamp(String timestamp) throws ParseException
 	{
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
@@ -132,7 +220,8 @@ public class TicketGrantingServer
 		long differenceBetweenTimestamps = compareTimestamps(currentTimestamp, receivedTimestamp);
 		boolean timestampValid = (differenceBetweenTimestamps < 1);
 		
-		String output = "2. TGS checks if timestamp is within 2 minutes of System Time: \n\n";
+		String output = "\n > The TGS checks if Timestamp is no more than 1 MINUTE before System Time. \n";
+		output +=       "   (A Timestamp > 1 minute in age indicates a Replay Attack for this Simulation) \n\n";
 		output +=	    "    > Received Timestamp:          " + dateFormat.format(receivedTimestamp) + "\n";
 		output +=		"    > Current Timestamp:           " + dateFormat.format(currentTimestamp) + "\n";
 		output +=		"    > Difference in Minutes:       " + differenceBetweenTimestamps + "\n";
@@ -144,6 +233,9 @@ public class TicketGrantingServer
 	}
 	
 	
+	/*	- Method receives 2 Date objects and returns the difference (in minutes) between the 2 Dates
+	 * 	- It does this by using the 'getTime()' method of Date, and using subtraction to find the difference
+	 */
 	private long compareTimestamps(Date currentTimestamp, Date receivedTimestamp) throws ParseException
 	{		
 		SimpleDateFormat f = new SimpleDateFormat("yyyy/mm/dd hh:mm:ss");
@@ -161,10 +253,17 @@ public class TicketGrantingServer
 	}
 	
 	
+	/*	- Method receives the Client's Ticket and checks that it hasn't expired
+	 *  - To do this:
+	 *  	1. Extract the date included in the ticket
+	 * 		2. Convert the extracted date string into a Java 'Date' object - call this 'expirationDateInTicket'
+	 * 		3. Make a new 'Date' object to get the current system time	   - call this 'currentDate'
+	 * 		4. Check if the current date is BEFORE the expiry date
+	 */
 	private boolean validateTicketExpiration(String ticket) throws ParseException
 	{		
-		int dateStart = ticket.indexOf("Expiration Date: ") + 17;
-		int dateEnd = ticket.indexOf("[/Date]");
+		int dateStart = ticket.indexOf("Expiration Date: ") + 17;	//tag sitting before expiration date
+		int dateEnd = ticket.indexOf("[/Date]");					//tag sitting right after expiration date
 		String expirationDateInTicket = ticket.substring(dateStart, dateEnd);
 		
 		SimpleDateFormat format = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
@@ -174,7 +273,7 @@ public class TicketGrantingServer
 		
 		boolean ticketNotExpired = currentDate.before(expiryDateFormatted);
 		
-		String output = "1. TGS checks if Ticket has not expired: \n\n";
+		String output = " > The TGS checks if Ticket has not expired: \n\n";
 		output +=	    "    > Ticket Expiration Time:      " + format.format(expiryDateFormatted) + "\n";
 		output +=       "    > Current Time:                " + format.format(currentDate) + "\n";
 		output +=       "    > Current Date < Expiry Date?  " + ticketNotExpired + "\n";
@@ -185,6 +284,14 @@ public class TicketGrantingServer
 	}
 	
 	
+	
+	
+	/*	- Method creates a random 21-character (168-bit Triple-DES key)
+	 * 	- Also creates a random 8-character (64-bit IV)
+	 * 
+	 *	- It then places the 2 elements in a single message (surrounded by tags [START_KEY], [END_KEY], [START_IV] and [END_IV]
+	 *  - The TGS then passes the message into the method 'sendKeyToClientAndServer()'
+	 */
 	public void generateSessionKey(String serverName) throws IOException
 	{
 		kerberos.printStepNine();
@@ -204,7 +311,7 @@ public class TicketGrantingServer
 		
 		Server server = findServer(serverName);
 		
-		System.out.println("3. TGS uses extracted Server Name to find correct server: " + "\n");
+		System.out.println("3. TGS uses extracted Server Name (from Step 8(A)) to find correct server: " + "\n");
 		System.out.println("   > Server:   " + serverName + "\n\n");
 		
 		kerberos.pauseSimulation();
@@ -213,6 +320,20 @@ public class TicketGrantingServer
 	}
 	
 	
+	
+	/*	- The TGS does 5 things here:
+	 * 		
+	 * 		1. copy the message containing the new session key
+	 * 
+	 * 		2. encrypt the 1st copy with the TGS-SERVER KEY (known to the Server)
+	 * 
+	 * 		3. encrypt the 2nd copy with the TGS KEY 		(known to the Client)
+	 * 
+	 *  	4. send the encrypted 1st copy to the Server
+	 *  
+	 *   	5. send the encrypted 2nd copy to the Client
+	 * 
+	 */
 	private void sendKeyToClientAndServer(String key, Server server, Client client) throws IOException
 	{
 		kerberos.printStepTen();
@@ -220,6 +341,7 @@ public class TicketGrantingServer
 		System.out.println("1. TGS creates TWO copies of a message containing the Client/Server-Key and Client/Server-IV: " + "\n");
 		System.out.println("   > Message:  " + key + "\n\n");
 		
+		//Encryption of the 2 copies of the session key
 		String encryptedKeyToServer = encryptOrDecrypt(key, keyServerTGS, ivServerTGS, "TGS_Encrypt_To_Server.txt", DES.processingMode.ENCRYPT);
 		String encryptedKeyToClient = encryptOrDecrypt(key, keyTGS, ivTGS, "TGS_Encrypt_To_Client.txt", DES.processingMode.ENCRYPT);
 		
@@ -236,11 +358,15 @@ public class TicketGrantingServer
 		kerberos.pauseSimulation();
 		kerberos.printStepEleven();
 		
+		//Send the session key to the Client and Server
 		server.receiveSessionKey(encryptedKeyToServer);
 		client.receiveSessionKey(encryptedKeyToClient);
 	}
 	
 	
+	/*	- Passes the KerberosSystem the name of the Server in the Client's request
+	 *  - The KerberosSystem returns the correspondin Server with the matching name
+	 */
 	private Server findServer(String serverName)
 	{
 		for (Server server: kerberos.servers)

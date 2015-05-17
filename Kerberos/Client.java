@@ -140,6 +140,9 @@ public class Client
 		
 		kerberos.pauseSimulation();
 		
+		if (kerberos.includeAttackInSimulation)
+			kerberos.hacker.copyTransmission(message);
+			
 		kerberos.TGS.receiveRequest(message);
 	}
 	
@@ -182,7 +185,7 @@ public class Client
 		
 		String plaintext = encryptOrDecrypt(encryptedKey, keyTGS, ivTGS, "Client_Decrypt_From_TGS.txt", DES.processingMode.DECRYPT);
 		
-		System.out.println("Server decrypts message with the TGS-Key ('" + keyTGS + "') & TGS-IV ('" + ivTGS + "'): "
+		System.out.println("Client decrypts message with the TGS-Key ('" + keyTGS + "') & TGS-IV ('" + ivTGS + "'): "
 			    + " - See 'CLIENT_DECRYPT_FROM_TGS.txt' \n");
 		
 		System.out.println("   > Plaintext:   " + plaintext + "\n\n");
@@ -199,7 +202,7 @@ public class Client
 	}
 	
 	
-	public void requestRSAKeys() throws IOException
+	public void requestRSAKeys() throws IOException, ParseException
 	{	
 		Server server = findServer(destinationServerName);
 		String message = "Hello server, I would like a new RSA key pair";
@@ -229,7 +232,7 @@ public class Client
 	}
 	
 	
-	public void receiveRSAKeys(String message) throws IOException
+	public void receiveRSAKeys(String message) throws IOException, ParseException
 	{	
 		kerberos.printStepFourteen();
 		System.out.println("1. Client receives encrypted key-pair from Server: " + "\n\n" + message + "\n");
@@ -237,10 +240,10 @@ public class Client
 		String decryptedMessage = encryptOrDecrypt(message, keyClientServer, ivClientServer, "Client_Decrypt_From_Server.txt", DES.processingMode.DECRYPT);
 		
 		System.out.println("2. Client decrypts key pair with Client/Server-Key & Client/Server-IV: "
-				+ "- See 'CLIENT_DECRYPT_FROM_SERVER.txt'" + "\n\n");
+				+ "- See 'CLIENT_DECRYPT_FROM_SERVER.txt'" + "\n");
 		
 		System.out.println(decryptedMessage + "\n");
 		
-		kerberos.printEnd();
+		kerberos.endSimulation();
 	}
 }

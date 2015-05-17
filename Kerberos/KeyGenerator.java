@@ -10,6 +10,10 @@ public class KeyGenerator
 		char[] chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890".toCharArray();
 		//r = new Random();
 		
+		/*	- While the length of the key is less than the desired length
+		 *  - Add a new random character from the char[] array above
+		 *  - Make sure the random index is less than the length of the chars[] array
+		 */
 		while(key.length() < length)
 		{
 			char c = chars[new Random().nextInt(chars.length)];
