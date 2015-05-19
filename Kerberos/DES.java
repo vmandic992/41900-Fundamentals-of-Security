@@ -223,7 +223,7 @@ public class DES
 	private void printKeys() throws IOException										//Prints the input 56-bit
 	{																				//and then the 16 x 56-bit subkeys
 		String s = "In Binary:  " + key + newLine + newLine;
-		s += "Subkeys:    Key i = Key (i - 1) [Shifted left by 1 and inverted]" + newLine + newLine;
+		s += "Subkeys:    Key i = Key (i - 1) [Shifted left by 3, inverted, shifted right by 5]" + newLine + newLine;
 		int i = 1;
 		for (String subKey: subKeys)
 		{
