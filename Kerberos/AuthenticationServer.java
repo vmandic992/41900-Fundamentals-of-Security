@@ -40,7 +40,7 @@ public class AuthenticationServer
 	{                                     
 		String s = "AUTHENTICATION SERVER ___________________________________________________________________________\n\n";
 		s +=       " - Authenticates users and generates Tickets for submission to the TGS." + "\n\n";
-		s +=       " - Configured with the TGS Key and TGS IV." + "\n";
+		s +=       " - Configured with the TGS Key and TGS IV {RANDOMLY GENERATED}" + "\n";
 		s +=	   "    > TGS-KEY:    " + keyTGS + "\n";
 		s +=       "    > TGS-IV:     " + ivTGS + "\n\n";
 		s +=       " - Contains a database with 4 Users; each with a Username and Password." + "\n\n";
@@ -56,7 +56,7 @@ public class AuthenticationServer
 	{
 		database.add(new Login("Andrew Scott" , "Scotty_22_from_BOX-HQ"));
 		database.add(new Login("Vedran Mandic", "xx_MiamiHotlinePro_xx"));	
-		database.add(new Login("Jeremiah Cruz", "MyLaptopBatteryIsShit"));	
+		database.add(new Login("Jeremiah Cruz", "MyLaptopBatteryIsCrap"));	
 		database.add(new Login("Jason D'Souza", "UTS_IT_SUPPORT_BEAST!"));	
 	}
 	
@@ -175,7 +175,7 @@ public class AuthenticationServer
 	 */
 	private String getTicketExpiryDate()
 	{
-		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS");
 		Calendar cal = Calendar.getInstance();
 		cal.add(Calendar.HOUR_OF_DAY, 1);					//current time + 1 hour = expiration
 		String date = dateFormat.format(cal.getTime());

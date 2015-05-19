@@ -35,9 +35,9 @@ public class Server
 	{
 		String s = "\n\n RESOURCE SERVER ___________________________________________________________________________\n\n";
 		s +=       " - Provides a service for Clients." + "\n\n";
-		s +=       " - Name:    " + serverName + "\n";
-		s +=       " - Service: " + service + "\n\n";
-		s +=	   " - Configured with the TGS-Server Key and TGS-Server IV (to use with the TGS)" + "\n";
+		s +=       " - Name:      " + serverName + "\n";
+		s +=       " - Service:   " + service + "\n\n";
+		s +=	   " - Configured with the TGS-Server Key and TGS-Server IV (to use with the TGS) {RANDOMLY GENERATED}" + "\n";
 		s +=	   "    > Server/TGS-KEY: " + keyServerTGS + "\n";
 		s +=	   "    > Server/TGS-IV:  " + ivServerTGS + "\n\n";
 		return s;
@@ -89,24 +89,34 @@ public class Server
 	 */
 	public void receiveSessionKey(String encryptedKey) throws IOException
 	{
-		System.out.println("Server receives encrypted Client/Server-Key and Client/Server-IV: " + "\n");
+		kerberos.printStepElevenA();
+		System.out.println("1. Server receives encrypted Client/Server-Key and Client/Server-IV: " + "\n");
 		System.out.println("   > Ciphertext:  " + encryptedKey + "\n\n");
 
 		String plaintext = encryptOrDecrypt(encryptedKey, keyServerTGS, ivServerTGS, "Server_Decrypt_From_TGS.txt", DES.processingMode.DECRYPT);
 		
-		System.out.println("Server decrypts message with the Server/TGS-Key ('" + keyServerTGS + "') & Server/TGS-IV ('" + ivServerTGS + "'): "
+		System.out.println("2. Server decrypts message with the Server/TGS-Key ('" + keyServerTGS + "') & Server/TGS-IV ('" + ivServerTGS + "'): "
 						    + " - See 'SERVER_DECRYPT_FROM_TGS.txt' \n");
 		
 		System.out.println("   > Plaintext:   " + plaintext + "\n\n");
 		
-		keyClientServer = extractBetweenTags(plaintext, "[START_KEY]", "[END_KEY]");
-		ivClientServer =  extractBetweenTags(plaintext, "[START_IV]", "[END_IV]");
+		extractSessionKeyElements(plaintext);
 		
-		System.out.println("Server extracts the Session key & IV: " + "\n");
+		System.out.println("3. Server extracts the Session key & IV: " + "\n");
 		System.out.println("   > Key:         " + keyClientServer + "\n");
 		System.out.println("   > IV:          " + ivClientServer + "\n\n");
 		
 		kerberos.serverHasKey = true;
+		kerberos.pauseSimulation();
+	}
+	
+	
+	/*	- Method uses 'extractBetweeTags()' to extract the Client/Server session key and IV
+	 */
+	private void extractSessionKeyElements(String plaintextKey)
+	{
+		keyClientServer = extractBetweenTags(plaintextKey, "[START_KEY]", "[END_KEY]");
+		ivClientServer =  extractBetweenTags(plaintextKey, "[START_IV]", "[END_IV]");
 	}
 	
 	

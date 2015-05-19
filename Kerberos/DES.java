@@ -23,9 +23,9 @@ public class DES
 	private int numberOfRounds = 16;				//Each block is encrypted in 16 rounds
 	private int charactersPerBlock = 8;				//Each block is 8 characters in size (each character is 8 bits)
 	private String key;								//This is the main key passed into the algorithm (56-bit DES key)
-	private LinkedList<String> subKeys;				//Stores the 16 subkeys generated from the inpuy 56-bit key ('private String key')
+	private LinkedList<String> subKeys;				//Stores the 16 subkeys generated from the input 56-bit key (above)
 	
-	private BufferedWriter writer;
+	private BufferedWriter writer;					//Used to write to a capture file (passed in by parent TripleDES object)
 	private String newLine = System.getProperty("line.separator");
 	
 	
@@ -52,7 +52,7 @@ public class DES
 	
 	
 	
-	public DES(String key, BufferedWriter writer) throws IOException				//CONSTRUCTOR: receives the 56-bit DES key
+	public DES(String key, BufferedWriter writer) throws IOException	//CONSTRUCTOR: receives the 56-bit DES key
 	{
 		this.writer = writer;
 		writeToCapture("56-bit key: " + key);
@@ -67,11 +67,15 @@ public class DES
 		printPBox();
 	}
 	
+	
+	//Used to write data to a file (using the 'writer' object, which points to a .txt file)
 	private void writeToCapture(String data) throws IOException
 	{
 		if (writer != null)
 			writer.write(data + newLine);
 	}
+	
+	
 	
 	private void constructSBox()
 	{
@@ -96,8 +100,9 @@ public class DES
 	private String pad(String data, int totalBinaryDigits)			//Takes a binary number and pads it with '0's
 	{																//'totalBinaryDigits' is how long we want our input number to be
 		String paddedData = data;
-		while (paddedData.length() < totalBinaryDigits)				//E.g. arguments ('10',8) outputs  '00000010'
-			paddedData = "0" + paddedData;							//E.g. arguments ('110',4) outputs '0110'
+		while (paddedData.length() < totalBinaryDigits)				//E.g. arguments ('10',8) outputs   '00000010'
+			paddedData = "0" + paddedData;							//E.g. arguments ('110',4) outputs  '0110'
+																	//E.g. arguments ('1101',8) outputs '00001101'
 		return paddedData;
 	}
 	
@@ -126,7 +131,7 @@ public class DES
 	
 	
 	
-	private void printSBox() throws IOException										//Prints the S-Box in pairs (input and output)
+	private void printSBox() throws IOException						//Prints the S-Box in pairs (input and output)
 	{
 		String s = "S-BOX (4x4):" + newLine;
 		s += "INPUT | OUTPUT" + newLine;
@@ -138,7 +143,7 @@ public class DES
 	}
 	
 	
-	private void printPBox() throws IOException
+	private void printPBox() throws IOException							//Prints the compression P-Box
 	{
 		String s = "P-BOX (7 bits compressed to 4 bits)" + newLine;
 		s += "Bit at Position X goes to Position Y" + newLine;
@@ -153,7 +158,7 @@ public class DES
 		String binaryString = "";									
 		byte[] bytes = s.getBytes();								//String is converted to an array of bytes using Java method 'getBytes()'
 		for (byte b: bytes)											//For each byte, convert it to a binary string
-			binaryString += pad(Integer.toBinaryString(b), 8);				//Add the byte's binary string to 'binaryString'
+			binaryString += pad(Integer.toBinaryString(b), 8);		//Add the byte's binary string to the local string 'binaryString'
 		return binaryString;										//Return the final concatenated binary string
 		
 																	//E.g. string "te" becomes byte_array[116, 101]
@@ -164,21 +169,22 @@ public class DES
 																		
 	
 	
-	//TO BE MODIFIED
-	private LinkedList<String> generateSubKeys()							//Generates subkeys from the main 56-bit key
+	
+	private LinkedList<String> generateSubKeys()							//Generates 16 subkeys from the main 56-bit key
 	{	
 		LinkedList<String> generatedKeys = new LinkedList<String>();
 		String shiftedKey = key;											//Get the main 56-bit key
 		for (int i = 0; i < numberOfRounds; i++)							//Execute 16 times (we need 1 key per round (16))
 		{
-			shiftedKey = performShift(shiftedKey, 4, shiftDirection.LEFT);	//Get 56-bit key, shift it left by 1
-			shiftedKey = performInversion(shiftedKey);						//Then invert the digits (i.e. 0 > 1 and 1 > 0)
+			shiftedKey = performShift(shiftedKey, 3, shiftDirection.LEFT);	//Get 56-bit key, shift it LEFT by 3
+			shiftedKey = performInversion(shiftedKey);						//Then invert the digits (i.e. 0 becomes 1 and 1 becomes 0)
+			shiftedKey = performShift(shiftedKey, 5, shiftDirection.RIGHT); //The shift the result RIGHT by 5
 			generatedKeys.add(shiftedKey);									//Add this new 56-bit key to the list of subkeys
 																			//Then use THIS key to create the next one, and so on...
 																			
-																			//E.g. Input DES key is 'A'
-																			// 'A' shifts and inverts to become 'B' (1st subkey)
-																			// 'B' shifts and inverts to become 'C' (2nd subkey)
+																			//E.g. Input DES key is key '101110' (VERY BASIC example)
+																			// 101110 generates the next key which is 010100
+																			// 010100 generates the next key which is 111010
 																			// and so on...
 		}
 		return generatedKeys;
@@ -193,7 +199,7 @@ public class DES
 		String shiftedString = "";
 		
 		switch (direction)
-		{																		  	//E.g. shit 1011000 left by 2
+		{																		  	//E.g. shift 1011000 left by 2:
 			case LEFT:															  	//Get first 2 bits from left '10'
 			{																	  	//Move them to the end: 11000|10
 				bitsToMove = data.substring(0, shift);							  	//Return 1100010
@@ -231,7 +237,7 @@ public class DES
 	
 	
 			
-	private String formatSpaces(int i)												//Helps neaten output that's all...
+	private String formatSpaces(int i)												//Helps neaten output so it's alligned
 	{
 		if (i < 10)
 			return "" + i + "  ";
@@ -242,7 +248,7 @@ public class DES
 	
 	
 	
-	//If another object wants a DES object to encrypt or decrypt something, it will call THIS method, passing the DES object the:
+	//The primary method which encrypts/decrypts data, it receives:
 	// 1. Data to encrypt or decrypt
 	// 2. Mode to use: ECB or CBC
 	// 3. Intialization Vector (IV): If ECB is used, then null is passed
@@ -255,21 +261,22 @@ public class DES
 		else
 			writeToCapture("Data to decrypt         : " + data + newLine);
 		
-		//First, pad the data so its character count is a multiple of 8 (since each block is 8 characters (64-bits)
-		//E.g. "Hello World" becomes "Hello World     " (5 spaces)
+		//First, pad the data so its character count is a multiple of 8 (since each block is 8 characters (64-bits))
+		//E.g. "Hello World" becomes "Hello World     " (5 spaces) - character count is 16, no longer 11
 		String paddedData = padWithSpaces(data);
 		
-		//Then convert the data into a list of decimal digits
+		//Then convert the data into a list of decimal (ASCII) digits
 		LinkedList<Integer> decimalData = convertToDecimal(paddedData);
 		
-		//Then convert each decimal in the list to its binary equivalent
+		//Then convert each decimal in the list to its 8-bit binary equivalent
 		LinkedList<String> binaryData = convertToBinary(decimalData);
 		
-		//Then segment the binary data into blocks of 64-bits
+		//Then segment the binary data into blocks of 64-bits (i.e. collect 8 elements at a time and concatenate them to make a block)
 		LinkedList<String> blocks = segmentIntoBlocks(binaryData);
 		
 		//Then either encrypt or decrypt
 		//Note: - Decryption is the same process as encryption, but with reverse subkey order
+		//		  This is the advantage of using the DES Feistel Structure
 		switch (mode)
 		{
 			case ENCRYPT: 
@@ -302,7 +309,7 @@ public class DES
 	
 	
 	
-	private LinkedList<Integer> convertToDecimal(String data) throws IOException					//Converts a string to a list of decimals
+	private LinkedList<Integer> convertToDecimal(String data) throws IOException	//Converts a string to a list of ASCII decimals
 	{
 		String s = "Data in ASCII           : ";
 		LinkedList<Integer> decimals = new LinkedList<Integer>();
@@ -311,7 +318,7 @@ public class DES
 			char c = data.charAt(i);											//E.g. 'A'
 			int decimal = (int)c;												//Decimal = 65 (which is 'A's ASCII value)
 			decimals.add(decimal);												//Add 65 to the list 'decimals'
-			s += decimal + ",";
+			s += decimal + ",";													//Then return the 'decimals' list
 		}
 		writeToCapture(s + newLine);
 		return decimals;
@@ -319,16 +326,16 @@ public class DES
 
 	
 	
-	private LinkedList<String> convertToBinary(LinkedList<Integer> decimalData) throws IOException	//Converts list of decimals to list of binary strings
+	private LinkedList<String> convertToBinary(LinkedList<Integer> decimalData) throws IOException	//Converts list of decimals to list of 8-bit binary strings
 	{
 		String s = "Data in Binary          : ";
 		LinkedList<String> binaryData = new LinkedList<String>();
 		for (int i = 0; i < decimalData.size(); i++)
 		{
-			int decimal = decimalData.get(i);									//E.g. '65' (from previous method 'convertToDecimal()')
-			String binary = Integer.toBinaryString(decimal);					// '65' becomes 1000001					  ^
+			int decimal = decimalData.get(i);									// E.g. '65' (from previous method 'convertToDecimal()')
+			String binary = Integer.toBinaryString(decimal);					// '65' becomes 1000001					  _
 			binary = pad(binary, 8);											// add padding so it's 8 characters long: 01000001
-			binaryData.add(binary);												//Add 01000001 to the list 'binaryData'
+			binaryData.add(binary);												// Add 01000001 to the list 'binaryData'
 			s += binary + ",";
 		}
 		writeToCapture(s + newLine);
@@ -343,15 +350,15 @@ public class DES
 	 * 
 	 * 
 	 * E.g. let's say we have "Hello Nice World" as our data: We begin with method 'processData()'
-	 * 		1. padWithSpaces() returns "Hello Nice World" (no spaces, it's character count is a multiple of 8)
+	 * 		1. padWithSpaces() returns "Hello Nice World" (no spaces, it's character count 16, and already is a multiple of 8)
 	 * 
-	 * 											  H   e   l   l   o  __  N  i  c   e  __ W   o   r   l   d
+	 * 											  H   e   l   l   o      N  i  c   e      W   o   r   l   d
 	 * 		2. convertToDecimal() returns "List: [72 101 108 108 111 32 78 105 99 101 32 87 111 114 108 100]"
 	 * 
-	 * 												72	    101       108     108      101       _       78			... etc...
+	 * 												72	    101       108     108      101               78			... etc...
 	 * 		3. convertToBinary() returns "List: [01001000 01100101 01101100 01101100 01101111 00100000 01001110 01101001 01100011 01100101 00100000 01010111 01101111 01110010 01101100 01100100 ]
 	 * 		
-	 * 																	H e l l o _ N i													c e _ W o r l d
+	 * 																	H e l l o   N i													   c e _ W o r l d
 	 * 		4. segmentIntoBlocks() returns "List: [0100100001100101011011000110110001101111001000000100111001101001, 0110001101100101001000000101011101101111011100100110110001100100]
 	 */
 	private LinkedList<String> segmentIntoBlocks(LinkedList<String> binaryData) throws IOException
@@ -411,7 +418,7 @@ public class DES
 				writeToCapture("!!!CBC: Initial Previous Ciphertext = IV:               (" + previousBlock + ")");
 				for (String block: blocks)										//For each block
 				{
-					switch (mode)												//If we're encrypting with CBC
+					switch (mode)												//If we're ENCRYPTING with CBC
 					{
 						case ENCRYPT:
 						{
@@ -421,13 +428,13 @@ public class DES
 							writeToCapture("!!!CBC: Current Block XOR with Previous Ciphertext:      " + chain + newLine);
 								
 							previousBlock = executeFeistel(chain, subKeys, mode);		//Then encrypt the result of the XOR, then make the result
-																				//be the 'previousBlock' for the NEXT block
+																				        //be the 'previousBlock' for the NEXT block
 							
 							processedBlocks.add(previousBlock);					//Add the result to the list of 'processedBlocks'
 							writeToCapture(" > Processed Block:     " + previousBlock + newLine + newLine);
 							break;
 						}
-						case DECRYPT:												 //If we're decrypting with CBC
+						case DECRYPT:												 //If we're DECRYPTING with CBC
 						{
 							writeToCapture(newLine + "Ciphertext Block " + (blocks.indexOf(block) + 1) + ":                                      " + block + newLine);
 	
@@ -470,9 +477,9 @@ public class DES
 	//Takes an input 64-bit block and list of 16 x 56-bit subkeys and performs the following:
 	/*	1. Splits the block into 2 halves (left and right) each 32-bits
 	 * 	2. For 16 rounds:
-	 * 		(a) put the right 32-bits in the feistel function with the current round subkey (see 'feistelFunction()' method below)
+	 * 		(a) put the right 32-bits in the Feistel function with the current round subkey (see 'feistelFunction()' method below)
 	 * 		(b) XOR the result with the left 32-bits
-	 * 		(c) next round uses the result as its right 32-bit half
+	 * 		(c) next round uses the XOR result as its right 32-bit half
 	 * 		(d) next round uses the current round's original right 32-bit half as the left 32-bit half
 	 * 3. After 16th round is over
 	 * 		(a) swap the left and right 32-bit halves
@@ -490,13 +497,18 @@ public class DES
 
 			writeToCapture("       - Left 32 Bits :            " + entryLeft + newLine);
 			writeToCapture("       - Right 32 Bits:            " + entryRight + newLine);
+			
+			//Feistel Structure Operations
 			String originalRight = entryRight;
 			String processedRight = feistelFunction(entryRight, subKeys.get(i), i, mode); //+ key
 			entryRight = performXOR(entryLeft, processedRight);
+			
 			writeToCapture("       - Left 32 Bits :            " + entryLeft + newLine);
 			writeToCapture("       - FUNCTION OUTPUT:          " + processedRight + newLine);
+			
 			writeToCapture("       - Left XOR FUNCTION OUTPUT: " + entryRight + newLine);
 			entryLeft = originalRight;
+			
 			writeToCapture("       - Next Round Left 32 Bits:  " + entryLeft +  " [Round's Original Right Half]" + newLine);
 			writeToCapture("       - Next Round Right 32 Bits: " + entryRight + " [Left XOR FUNCTION OUTPUT]" + newLine);
 			//System.out.println(entryLeft + entryRight);
@@ -509,10 +521,10 @@ public class DES
 	
 	
 	//Takes a 32-bit half and modifies it using the 56-bit round subkey
-	/*	1. Compress the 56-bit key into 32-bits using method 'compressKey()' (which uses compression P-Box)
+	/*	1. Compress the 56-bit round key into 32-bits using method 'compressKey()' (which uses the compression P-Box)
 	 * 	2. Split the 32-bit half into left and right halves (16-bits each)
 	 *  3. Process each half using the S-Box
-	 *  4. Swap the 2 halves and concatenate them into a 32-bit sting
+	 *  4. Swap the 2 halves and concatenate them into a 32-bit string
 	 *  5. Invert the bits of the new 32-bit string
 	 *  6. XOR the 32-bit string with the compressed 32-bit key
 	 */
@@ -525,6 +537,7 @@ public class DES
 			writeToCapture("          - Round Key:        " + roundKey + "   [Subkey: " + (15 - round + 1) + "]");
 		//String compressedKey = roundKey.substring(0, 32);
 		String compressedKey = compressKey(roundKey);
+		
 		writeToCapture("          - Input Half:       " + blockRightHalf);
 		
 		String leftHalf = blockRightHalf.substring(0, blockRightHalf.length() / 2);
@@ -533,16 +546,20 @@ public class DES
 		String sBoxLeftHalf = performSubstitution(leftHalf);
 		String sBoxRightHalf = performSubstitution(rightHalf);
 		String sBoxResult = sBoxLeftHalf + sBoxRightHalf;
+		
 		writeToCapture("          - S-Box Result:     " + sBoxResult + "   [per every group of 4-bits]");
 		
 		String swapResult = performSwap(sBoxResult);
+		
 		writeToCapture("          - Split Into Two:   " + sBoxLeftHalf + " [L] " + sBoxRightHalf + " [R]");
 		writeToCapture("          - Swap Halves:      " + swapResult);
 		
 		String invertResult = performInversion(swapResult);
+		
 		writeToCapture("          - Bit Inversion:    " + invertResult);
 		
 		String xorResult = performXOR(invertResult, compressedKey);
+		
 		writeToCapture("          - Compressed Key:   " + compressedKey + "   [done by compression P-Box]");
 		writeToCapture("          - XOR with Key:     " + xorResult + newLine);
 		writeToCapture("          - FUNCTION OUTPUT:  " + xorResult + newLine);
@@ -555,7 +572,7 @@ public class DES
 	
 	//Takes a list of blocks (64-bits) and converts the entire list into text for final output
 	/* 1. Take each 64-bit block
-	 * 2. Convert each group of 8-bits in the block into decimal
+	 * 2. Convert each group of 8-bits of the block into decimal (ASCII)
 	 * 3. Convert each decimal into a character
 	 * 4. Add the character to the final output string 'data'
 	 */
@@ -581,7 +598,8 @@ public class DES
 	//Takes an input binary string and performs substitution (S-Box)
 	/* 1. Take each group of 4-bits
 	 * 2. Look up the 4-bit group in the S-Box
-	 * 3. Output the corresponding S-Box output value
+	 * 3. Output the corresponding S-Box output value, add the value to string 'sBoxResult'
+	 * 4. Return the final processed string 'sBoxResult'
 	 */
 	private String performSubstitution(String data)
 	{
@@ -603,7 +621,7 @@ public class DES
 	}
 		
 	
-	//Takes an input binary string and split it into 2 equal-size halves
+	//Takes an input binary string and splits it into 2 equal-size halves
 	//The 2 halves are swapped
 	private String performSwap(String data)
 	{

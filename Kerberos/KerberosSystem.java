@@ -12,14 +12,19 @@ public class KerberosSystem
 	public AuthenticationServer AS;
 	public TicketGrantingServer TGS;
 	public LinkedList<Server> servers = new LinkedList<Server>(); //will only hold 1 server (RSA key generator)
-	public Client client;										  //used to hold the simulated client
+	public Client client;
+	
+	//Man-in-the-middle attack variables
 	public Hacker hacker;
 	public boolean includeAttackInSimulation = false;
 	
 	//Holds the chosen block-cipher mode (ECB or CBC)
+	/*  All entities must know what the blockCipherMode is, so then they know
+	 *  which mode to use in encryption/decryption (i.e. whether or not to use the IV)
+	 */
 	private String blockCipherMode;
 	
-	//If both are true, then the client and server can start communicating
+	//When both are true, then the client and server can start communicating securely
 	public boolean clientHasKey = false;
 	public boolean serverHasKey = false;
 	
@@ -27,7 +32,7 @@ public class KerberosSystem
 	public KerberosSystem() throws IOException, ParseException 
 	{
 		showWelcomeText();				//introduce program
-		displayCaptureFiles();			//display the text file names which will capture encryption/decryption output
+		displayCaptureFiles();			//display the text file names which will capture internal encryption/decryption operations
 		
 		pauseSimulation();				//STOP, let the user read
 		setBlockCipherMode();			//prompt the user to enter ECB or CBC for block-cipher mode
@@ -64,25 +69,25 @@ public class KerberosSystem
 		s +=	   " 10. 'Server_Decrypt_From_Client'  ---   When Server decrypts RSA key-pair request \n";
 		s +=       " 11. 'Server_Encrypt_To_Client'    ---   When Server encrypts RSA key-pair response \n";
 		s +=       " 12. 'Client_Decrypt_From Server'  ---   When Client decrypts RSA key-pair response \n";
-		s +=       " 13. 'TGS_Encrypt_To_Hacker'       ---   When TGS encrypts random session key \n\n";
+		s +=       " 13. 'TGS_Encrypt_To_Hacker'       ---   When TGS encrypts random session key (used in MITM attack) \n\n";
 
 		System.out.println(s);
 	}
 	
-	//Prompts the user to enter which block-cipher mode to use
+	//Prompts the user to enter which block-cipher mode to use (uses method 'getEncryptionMode()')
 	private void setBlockCipherMode()
 	{
 		String s = "\nThis code uses 168-Bit TripleDES encryption, using 64-Bit blocks. \n\n";
 		s += "Please decide which 'Block-Cipher Mode' to use: \n";
 		s += " - 'ECB': Each block is encrypted independently. \n";
 		s += " - 'CBC': Each block is encrypted after being XORed with previous ciphertext block. \n\n";
-		s += "NOTE: ECB will always be used between the CLIENT and AS. \n\n";
+		s += "NOTE: ECB will always be used between the CLIENT and AS; no IV (for CBC) is shared between the 2 entities. \n\n";
 		s += "Block-Cipher Mode: ('ECB' or 'CBC'): ";
 		
 		blockCipherMode = getEncryptionMode(s);
 	}
 	
-	//Prompts the user to enter which block-cipher mode to use
+	//Prompts the user to enter which block-cipher mode to use (ECB or CBC)
 	private String getEncryptionMode(String prompt)
 	{
 		System.out.print(prompt);
@@ -109,14 +114,16 @@ public class KerberosSystem
 	}
 	
 	private void createServersAndClient()
-	{
+	{	
 		printStepOne();
 		
 		//Create random TGS key and TGS IV
+		//These will be shared between AS and TGS
 		String keyTGS = new KeyGenerator(21).getKey();
 		String ivTGS = new KeyGenerator(8).getKey();
 		
 		//Create random Server-TGS Key and Server-TGS IV
+		//These will be shared between Server and TGS
 		String keyServerTGS = new KeyGenerator(21).getKey();
 		String ivServerTGS = new KeyGenerator(8).getKey();
 		
@@ -136,7 +143,8 @@ public class KerberosSystem
 		client = new Client("Vedran Mandic", "xx_MiamiHotlinePro_xx", blockCipherMode, this);	
 		pauseSimulation();	
 		
-		//If we'e including a man-in-the-middle attack, make a Hacker, passing in a name and this Kerberos object
+		//If we're including a man-in-the-middle attack, make a Hacker, passing in a name and this Kerberos object
+		//The hacker does not need to know the block-cipher-mode (he won't be able to decrypt anything...)
 		if (includeAttackInSimulation)
 		{
 			hacker = new Hacker("Bob Hack", this);
@@ -144,6 +152,8 @@ public class KerberosSystem
 		}
 	}
 	
+	
+	//Used to pause the program; resumes when user presses 'Enter'
 	public void pauseSimulation()
 	{
 		System.out.print("<<< PRESS ENTER TO CONTINUE >>>");
@@ -151,8 +161,7 @@ public class KerberosSystem
 	}
 	
 	
-	/*	- This method starts Kerberos by instructing the Client to send a request to the AS
-	 */
+	//This method starts Kerberos by instructing the Client to send a request to the AS
 	private void startKerberos() throws IOException, ParseException
 	{
 		printStepTwo();
@@ -179,8 +188,7 @@ public class KerberosSystem
 	}
 	
 	
-	/*	- Once the normal Kerberos flow is over, show the man-in-the-middle attack (replay attack)
-	 */
+	//Once the normal Kerberos flow is over, show the man-in-the-middle attack (replay attack)
 	public void endSimulation() throws IOException, ParseException
 	{
 		printEnd();		
@@ -280,10 +288,18 @@ public class KerberosSystem
 		System.out.println(s);
 	}
 	
-	public void printStepEleven()
+	public void printStepElevenA()
 	{
 		String s = "\n===============================================================================================";
-		s += 	   "\n>>> STEP 11: CLIENT AND SERVER RECEIVE ENCRYPTED SESSION KEY AND DECRYPT IT INDEPENDENTLY <<<";
+		s += 	   "\n>>> STEP 11(A): SERVER RECEIVE ENCRYPTED SESSION KEY AND DECRYPTS IT <<<";
+		s +=       "\n===============================================================================================\n";
+		System.out.println(s);
+	}
+	
+	public void printStepElevenB()
+	{
+		String s = "\n===============================================================================================";
+		s += 	   "\n>>> STEP 11(B): CLIENT RECEIVE ENCRYPTED SESSION KEY AND DECRYPTS IT <<<";
 		s +=       "\n===============================================================================================\n";
 		System.out.println(s);
 	}
@@ -324,6 +340,14 @@ public class KerberosSystem
 	{
 		String s = "\n===============================================================================================";
 		s += 	   "\n>>> MAN-IN-THE-MIDDLE-ATTACK - HACKER WILL ATTEMPT TO EXECUTE A REPLAY ATTACK <<<";
+		s +=       "\n===============================================================================================\n";
+		System.out.println(s);
+	}
+	
+	public void printAttackEnd()
+	{
+		String s = "\n===============================================================================================";
+		s += 	   "\n>>> END OF MAN-IN-THE-MIDDLE ATTACK SIMULATION - THANK YOU :D <<<";
 		s +=       "\n===============================================================================================\n";
 		System.out.println(s);
 	}

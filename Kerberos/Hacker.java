@@ -37,7 +37,7 @@ public class Hacker
 		
 		System.out.println(s);
 		
-		kerberos.pauseSimulation();
+		//kerberos.pauseSimulation();
 	}
 	
 	
@@ -60,11 +60,18 @@ public class Hacker
 	}
 	
 	
+	/* - Hacker receives session key (if replay attack was successful), but cannot decrypt it
+	 *   (he does not know the TGS key)
+	 */
 	public void receiveSessionKey(String key)
 	{
 		String s = "\n\n > " + name + " receives the encrypted session key: \n\n" + key + "\n\n";
-		s +=	   " > HOWEVER, he cannot decrypt it because he does not know the TGS-Key \n\n";
+		s +=	   " > HOWEVER, he cannot decrypt it because he does not know the TGS-Key. \n\n";
+		s +=	   " > The number of combinations for the 168-bit TripleDES key is: \n";
+		s +=	   "    - 374,144,419,156,711,147,060,143,317,175,368,453,031,918,731,001,856 \n\n";
+		s +=	   " > And " + name + " will have a fun time cracking the key by the end of 5.9*(10^30) years! \n\n";
 		s +=	   " > Therefore, the attack was ultimately unsuccessful.";
 		System.out.println(s);
+		kerberos.printAttackEnd();
 	}
 }

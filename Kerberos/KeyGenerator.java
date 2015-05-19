@@ -3,11 +3,12 @@ import java.util.Random;
 public class KeyGenerator 
 {
 	private String key = "";
+	public static char[] chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890".toCharArray();
 	//private Random r;
 	
 	public KeyGenerator(int length)
 	{
-		char[] chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890".toCharArray();
+		//char[] chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890".toCharArray();
 		//r = new Random();
 		
 		/*	- While the length of the key is less than the desired length
