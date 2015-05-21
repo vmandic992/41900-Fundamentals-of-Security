@@ -393,73 +393,90 @@ public class DES
 		
 		switch(cipherMode)
 		{
-			case ECB: //Electronic Code Book									//If we're using ECB
+			case ECB: //Electronic Code Book
 			{
-				writeToCapture(newLine + newLine + "<<<<<< PROCESSING IN 'ECB' MODE >>>>>>" + newLine + newLine);
-				for (String block: blocks)										//For each block
-				{				
-					if (mode == DES.processingMode.ENCRYPT)
-						writeToCapture(newLine + "Plaintext Block " + (blocks.indexOf(block) + 1) + ": " + block + newLine);
-					else
-						writeToCapture("Ciphertext Block " + (blocks.indexOf(block) + 1) + ": " + block + newLine);
-
-					String processedBlock = executeFeistel(block, subKeys, mode);		//Process the block using Feistel structure and subkeys
-					processedBlocks.add(processedBlock);						//Add the resulting block to the list 'processedBlocks'
-					writeToCapture(" > Processed Block:     " + processedBlock + newLine + newLine);
-				}
-				return convertBinaryToText(processedBlocks);					//Return the list of result blocks, converted back to text
+				return cipherModeECB(processedBlocks, blocks, subKeys, cipherMode, IV, mode);
 			}
 			
 			case CBC: //Cipher Block Chaining 
 			{
-				writeToCapture(newLine + newLine + "<<<<<< PROCESSING IN 'CBC' MODE >>>>>>" + newLine + newLine);
-				String previousBlock = pad(convertStringToBinary(IV), 64); 		//If we're using CBC, set 'previousBlock' to IV
-																				//The IV needs to be padded so it's 64 bits in size
-				writeToCapture("!!!CBC: Initial Previous Ciphertext = IV:               (" + previousBlock + ")");
-				for (String block: blocks)										//For each block
-				{
-					switch (mode)												//If we're ENCRYPTING with CBC
-					{
-						case ENCRYPT:
-						{
-							writeToCapture(newLine + "Plaintext Block: " + (blocks.indexOf(block) + 1) + ":                                      " + block + newLine);
-							writeToCapture("!!!CBC: Previous Ciphertext:                             " + previousBlock + newLine);
-							String chain = performXOR(block, previousBlock);	//Get current block and XOR it with the previous block
-							writeToCapture("!!!CBC: Current Block XOR with Previous Ciphertext:      " + chain + newLine);
-								
-							previousBlock = executeFeistel(chain, subKeys, mode);		//Then encrypt the result of the XOR, then make the result
-																				        //be the 'previousBlock' for the NEXT block
-							
-							processedBlocks.add(previousBlock);					//Add the result to the list of 'processedBlocks'
-							writeToCapture(" > Processed Block:     " + previousBlock + newLine + newLine);
-							break;
-						}
-						case DECRYPT:												 //If we're DECRYPTING with CBC
-						{
-							writeToCapture(newLine + "Ciphertext Block " + (blocks.indexOf(block) + 1) + ":                                      " + block + newLine);
-	
-							String decryptedBlock = executeFeistel(block, subKeys, mode);	 //Decrypt the current block
-							writeToCapture(" > Decrypted Block:     " + decryptedBlock + newLine + newLine);
-							writeToCapture("!!!CBC: Previous Ciphertext:                             " + previousBlock + newLine);
-							String chain = performXOR(decryptedBlock, previousBlock);//XOR it with the 'previousBlock' (initially equal to IV)
-							writeToCapture("!!!CBC: Decrypted Block XOR with Previous Ciphertext:    " + chain + newLine);
-							processedBlocks.add(chain);								 //Add th XOR result to the list of 'processedBlocks'
-							previousBlock = block;									 //Make the initial ciphertext block the 'previousBlock'
-							writeToCapture(" > Final Processed Block:                                " + chain + newLine + newLine);
-
-							break;															
-						}
-					}
-				}
-				return convertBinaryToText(processedBlocks);						//Then return the list converted back to text
+				return cipherModeCBC(processedBlocks, blocks, subKeys, cipherMode, IV, mode);
 			}
 		}
 		return null;
 	}
 	
+	private String cipherModeECB(LinkedList<String> processedBlocks, LinkedList<String> blocks, LinkedList<String> subKeys, blockCipherMode cipherMode, String IV, processingMode mode) throws IOException
+	{
+		writeToCapture(newLine + newLine + "<<<<<< PROCESSING IN 'ECB' MODE >>>>>>" + newLine + newLine);
+		for (String block: blocks)										//For each block
+		{				
+			if (mode == DES.processingMode.ENCRYPT)
+				writeToCapture(newLine + "Plaintext Block " + (blocks.indexOf(block) + 1) + ": " + block + newLine);
+			else
+				writeToCapture("Ciphertext Block " + (blocks.indexOf(block) + 1) + ": " + block + newLine);
+
+			String processedBlock = executeFeistel(block, subKeys, mode);		//Process the block using Feistel structure and subkeys
+			processedBlocks.add(processedBlock);						//Add the resulting block to the list 'processedBlocks'
+			writeToCapture(" > Processed Block:     " + processedBlock + newLine + newLine);
+		}
+		return convertBinaryToText(processedBlocks);					//Return the list of result blocks, converted back to text
+	}
 	
+	private String cipherModeCBC(LinkedList<String> processedBlocks, LinkedList<String> blocks, LinkedList<String> subKeys, blockCipherMode cipherMode, String IV, processingMode mode) throws IOException
+	{
+		writeToCapture(newLine + newLine + "<<<<<< PROCESSING IN 'CBC' MODE >>>>>>" + newLine + newLine);
+		String previousBlock = pad(convertStringToBinary(IV), 64); 		//If we're using CBC, set 'previousBlock' to IV
+																		//The IV needs to be padded so it's 64 bits in size
+		writeToCapture("!!!CBC: Initial Previous Ciphertext = IV:               (" + previousBlock + ")");
+		for (String block: blocks)										//For each block
+		{
+			switch (mode)				
+			{
+				case ENCRYPT: //If we're ENCRYPTING with CBC
+				{
+					previousBlock = CBCEncrypt(processedBlocks, blocks, previousBlock, block, subKeys, IV, mode);
+					break;																							
+				}
+				case DECRYPT: //If we're DECRYPTING with CBC
+				{
+					previousBlock = CBCDecrypt(processedBlocks, blocks, previousBlock, block, subKeys, IV, mode);
+					break;															
+				}
+			}
+		}
+		return convertBinaryToText(processedBlocks);						//Then return the list converted back to text
+	}
 	
+	private String CBCEncrypt(LinkedList<String> processedBlocks, LinkedList<String> blocks, String previousBlock, String block, LinkedList<String> subKeys, String IV, processingMode mode) throws IOException
+	{
+		writeToCapture(newLine + "Plaintext Block: " + (blocks.indexOf(block) + 1) + ":                                      " + block + newLine);
+		writeToCapture("!!!CBC: Previous Ciphertext:                             " + previousBlock + newLine);
+		String chain = performXOR(block, previousBlock);	//Get current block and XOR it with the previous block (initially equal to IV)
+		writeToCapture("!!!CBC: Current Block XOR with Previous Ciphertext:      " + chain + newLine);
+			
+		previousBlock = executeFeistel(chain, subKeys, mode);		//Then encrypt the result of the XOR, then make the result
+															        //be the 'previousBlock' for the NEXT block
+		
+		processedBlocks.add(previousBlock);					//Add the result to the list of 'processedBlocks'
+		writeToCapture(" > Processed Block:     " + previousBlock + newLine + newLine);
+		return previousBlock;							//Return the new previousBlock, so it can be used with the next block to encrypt
+	}
 	
+	private String CBCDecrypt(LinkedList<String> processedBlocks, LinkedList<String> blocks, String previousBlock, String block, LinkedList<String> subKeys, String IV, processingMode mode) throws IOException
+	{
+		writeToCapture(newLine + "Ciphertext Block " + (blocks.indexOf(block) + 1) + ":                                      " + block + newLine);
+
+		String decryptedBlock = executeFeistel(block, subKeys, mode);	 //Decrypt the current block
+		writeToCapture(" > Decrypted Block:     " + decryptedBlock + newLine + newLine);
+		writeToCapture("!!!CBC: Previous Ciphertext:                             " + previousBlock + newLine);
+		String chain = performXOR(decryptedBlock, previousBlock);//XOR it with the 'previousBlock' (initially equal to IV)
+		writeToCapture("!!!CBC: Decrypted Block XOR with Previous Ciphertext:    " + chain + newLine);
+		processedBlocks.add(chain);								 //Add the XOR result to the list of 'processedBlocks'
+		previousBlock = block;									 //Make the initial ciphertext block the 'previousBlock' for the next ciphertext block
+		writeToCapture(" > Final Processed Block:                                " + chain + newLine + newLine);
+		return previousBlock;	//Return the new previousBlck, so it can be used with the next block to decrypt
+	}
 	
 	private LinkedList<String> reverseOrderSubKeys()					//Reverses the order of subkeys (for decryption only)
 	{

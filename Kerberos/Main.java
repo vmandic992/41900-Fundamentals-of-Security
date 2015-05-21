@@ -1,10 +1,5 @@
 import java.io.IOException;
-import java.text.DateFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-
 
 public class Main 
 {
@@ -12,21 +7,19 @@ public class Main
 	{
 		new KerberosSystem();	
 		
+		//QUICK DES TEST CODE (to use, comment 'new KerberosSystem()' above, and uncomment all the following code)
 		/*
-		String key = "ABCDEFGHIJKLMNOPQRSTU";
-		String iv = "12345678";
+		String key = "123DEFZHIJKLZNOPQRSTU";
+		String iv = "12345BB8";
 		
-		String message = "41900 is an awesome subject!";
+		String message = "Hello world this is a test";
 		
-		long start = System.currentTimeMillis();
 		String cipherText = new TripleDES(key, iv, null).processData(message, DES.blockCipherMode.CBC, DES.processingMode.ENCRYPT);
-		long timeTaken = System.currentTimeMillis() - start;
 		
 		String plainText = new TripleDES(key, iv, null).processData(cipherText, DES.blockCipherMode.CBC, DES.processingMode.DECRYPT);
 		
 		System.out.println("Message:        " + message);
 		System.out.println("Cipher:         " + cipherText);
-		System.out.println("Plaintext:      " + plainText);
-		System.out.println("Execution Time: " + timeTaken);*/
+		System.out.println("Plaintext:      " + plainText);*/
 	}
 }
