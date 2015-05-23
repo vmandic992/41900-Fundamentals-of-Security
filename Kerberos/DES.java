@@ -178,13 +178,12 @@ public class DES
 		{
 			shiftedKey = performShift(shiftedKey, 3, shiftDirection.LEFT);	//Get 56-bit key, shift it LEFT by 3
 			shiftedKey = performInversion(shiftedKey);						//Then invert the digits (i.e. 0 becomes 1 and 1 becomes 0)
-			shiftedKey = performShift(shiftedKey, 5, shiftDirection.RIGHT); //The shift the result RIGHT by 5
 			generatedKeys.add(shiftedKey);									//Add this new 56-bit key to the list of subkeys
 																			//Then use THIS key to create the next one, and so on...
 																			
 																			//E.g. Input DES key is key '101110' (VERY BASIC example)
-																			// 101110 generates the next key which is 010100
-																			// 010100 generates the next key which is 111010
+																			// 101110 generates the next key which is 001010
+																			// 001010 generates the next key which is 101110
 																			// and so on...
 		}
 		return generatedKeys;
@@ -223,7 +222,7 @@ public class DES
 	private void printKeys() throws IOException										//Prints the input 56-bit
 	{																				//and then the 16 x 56-bit subkeys
 		String s = "In Binary:  " + key + newLine + newLine;
-		s += "Subkeys:    Key i = Key (i - 1) [Shifted left by 3, inverted, shifted right by 5]" + newLine + newLine;
+		s += "Subkeys:    Key i = Key (i - 1) [Shifted left by 3 and then inverted]" + newLine + newLine;
 		int i = 1;
 		for (String subKey: subKeys)
 		{
